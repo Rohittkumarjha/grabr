@@ -9,7 +9,7 @@
     "postinstall": "pip3 install --quiet --upgrade yt-dlp --break-system-packages 2>/dev/null || pip3 install --quiet --upgrade yt-dlp 2>/dev/null || pip install --quiet --upgrade yt-dlp 2>/dev/null || echo '[postinstall] pip not available, yt-dlp will auto-install at runtime'"
   },
   "engines": {
-    "node": ">=18"
+    "node": "18.x"
   },
   "license": "MIT"
 }
