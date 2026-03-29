@@ -1,42 +1,3 @@
-/**
- * GRABR — Media Downloader Backend v3.0
- *
- * ─── WHY THIS VERSION EXISTS ───────────────────────────────────────────────
- * All public Cobalt community instances are dead or require auth as of 2025:
- *   • cobalt-api.kwiatekmiki.com  → HTTP 530 (Cloudflare origin down)
- *   • cobalt.api.timelessnesses.me → HTTP 404
- *   • capi.oak.li                 → "Dead Host"
- *   • api.cobalt.tools            → JWT auth required
- *
- * The Cobalt maintainers deliberately shut down public access to stop scrapers.
- * The ONLY reliable solution is to host your own Cobalt instance.
- *
- * ─── HOW TO GET YOUR OWN COBALT INSTANCE (free, ~5 minutes) ───────────────
- *
- *  ★ OPTION A — Railway (easiest, no config needed):
- *    1. Visit https://railway.com/deploy/cobalt-media-downloader
- *    2. Click "Deploy Now", sign in with GitHub
- *    3. Copy your public URL, e.g.:  cobalt-production-xxxx.up.railway.app
- *    4. On Render dashboard → your GRABR service → Environment:
- *       Add variable:  COBALT_INSTANCE = https://cobalt-production-xxxx.up.railway.app
- *    5. Redeploy GRABR. Done.
- *
- *  ★ OPTION B — Docker locally:
- *    docker run -d -p 9000:9000 \
- *      -e API_URL=http://localhost:9000 \
- *      -e CORS_WILDCARD=1 \
- *      ghcr.io/imputnet/cobalt:11
- *    Then: COBALT_INSTANCE=http://localhost:9000 node server/index.js
- *
- *  ★ OPTION C — Deploy cobalt on Render as a separate service:
- *    - New service → Docker → Image: ghcr.io/imputnet/cobalt:11
- *    - Env vars: API_URL=https://<your-render-cobalt-url> CORS_WILDCARD=1
- *    - Then set COBALT_INSTANCE on THIS service to that URL
- *
- * Run this server:
- *   COBALT_INSTANCE=https://your-cobalt-url node server/index.js
- */
-
 'use strict';
 
 const http = require('http');
@@ -49,7 +10,7 @@ const crypto = require('crypto');
 
 const PORT = process.env.PORT || 3000;
 
-// ── Load .env file if present ─────────────────────────────────────────────────
+// ── Load .env ─────────────────────────────────────────────────────────────────
 const envFile = path.join(__dirname, '../.env');
 if (fs.existsSync(envFile)) {
     fs.readFileSync(envFile, 'utf8').split('\n').forEach(line => {
@@ -58,9 +19,6 @@ if (fs.existsSync(envFile)) {
     });
 }
 
-// ── Cobalt instance ───────────────────────────────────────────────────────────
-// Set COBALT_INSTANCE env var to your own hosted Cobalt URL.
-// Without it, no downloads will work.
 const COBALT_INSTANCE = (process.env.COBALT_INSTANCE || '').replace(/\/$/, '');
 
 // ── FFmpeg detection ──────────────────────────────────────────────────────────
@@ -79,10 +37,6 @@ if (!FFMPEG_PATH) {
 console.log(FFMPEG_PATH ? `✓ FFmpeg: ${FFMPEG_PATH}` : '✗ FFmpeg not found');
 
 // ── HTTP helpers ──────────────────────────────────────────────────────────────
-/**
- * Generic HTTP/HTTPS request with redirect following.
- * rejectUnauthorized:false handles self-signed certs on some cobalt instances.
- */
 function makeRequest(method, targetUrl, jsonBody, extraHeaders = {}) {
     return new Promise((resolve, reject) => {
         let hops = 0;
@@ -108,7 +62,7 @@ function makeRequest(method, targetUrl, jsonBody, extraHeaders = {}) {
                     } : {}),
                 },
                 rejectUnauthorized: false,
-                timeout: 22000,
+                timeout: 25000,
             };
             const req = mod.request(options, res => {
                 const loc = res.headers.location;
@@ -127,7 +81,6 @@ function makeRequest(method, targetUrl, jsonBody, extraHeaders = {}) {
     });
 }
 
-/** POST JSON and parse response JSON. */
 function postJSON(targetUrl, body) {
     return new Promise(async (resolve, reject) => {
         try {
@@ -143,12 +96,24 @@ function postJSON(targetUrl, body) {
     });
 }
 
-/** GET and return the response stream (for proxying). */
 function getStream(targetUrl) {
     return makeRequest('GET', targetUrl, null, {});
 }
 
-/** Read all request body bytes. */
+/** HEAD request to get Content-Length without downloading. */
+function headRequest(targetUrl) {
+    return new Promise(async (resolve) => {
+        try {
+            const res = await makeRequest('HEAD', targetUrl, null, {});
+            res.resume();
+            const len = parseInt(res.headers['content-length'] || '0', 10);
+            resolve(len || 0);
+        } catch (_) {
+            resolve(0);
+        }
+    });
+}
+
 function readBody(req) {
     return new Promise((resolve, reject) => {
         let body = '';
@@ -162,33 +127,23 @@ function readBody(req) {
 async function cobaltFetch(payload) {
     if (!COBALT_INSTANCE) {
         throw new Error(
-            'No Cobalt instance configured. ' +
-            'Deploy your own at https://railway.com/deploy/cobalt-media-downloader ' +
-            'then add COBALT_INSTANCE env var in your Render dashboard and redeploy.'
+            'No Cobalt instance configured. Deploy your own at https://railway.com/deploy/cobalt-media-downloader ' +
+            'then add COBALT_INSTANCE env var.'
         );
     }
 
-    console.log(`  → ${COBALT_INSTANCE}`);
     const { httpStatus, data } = await postJSON(COBALT_INSTANCE + '/', payload);
     const errCode = data?.error?.code || data?.text || '';
 
     if (errCode.includes('auth') || httpStatus === 401 || httpStatus === 403) {
-        throw new Error(
-            'Your Cobalt instance requires authentication. ' +
-            'Make sure it is deployed with CORS_WILDCARD=1 and no API_AUTH_REQUIRED setting.'
-        );
+        throw new Error('Your Cobalt instance requires authentication.');
     }
-
     if (errCode.includes('rate') || httpStatus === 429) {
         throw new Error('Rate limited by Cobalt instance. Please wait and try again.');
     }
-
     if (httpStatus < 400 && data && data.status !== 'error') {
-        console.log(`  ✓ status: ${data.status}`);
         return data;
     }
-
-    // Cobalt-level error (private video, age-restricted, etc.)
     throw new Error(interpretCobaltError(errCode || data?.status || `HTTP ${httpStatus}`));
 }
 
@@ -198,8 +153,137 @@ function interpretCobaltError(code) {
     if (c.includes('age')) return 'Age-restricted content cannot be downloaded.';
     if (c.includes('unavailable') || c.includes('not found')) return 'Content is unavailable or the link is wrong.';
     if (c.includes('rate') || c.includes('limit')) return 'Rate limited. Please wait a moment and try again.';
-    if (c.includes('youtube.login')) return 'YouTube requires authentication for this video. Try a different video.';
     return `Download failed: ${code}`;
+}
+
+// ── Quality probing ───────────────────────────────────────────────────────────
+const ALL_QUALITIES = ['2160', '1440', '1080', '720', '480', '360', '240', '144'];
+
+/**
+ * Probe which qualities actually work for a given URL.
+ * Returns array of { quality, url, audioUrl, hasAudio, needsMerge, size }
+ */
+async function probeQualities(mediaUrl) {
+    const results = [];
+
+    // First, try "max" to get the best quality and understand the media
+    let maxData = null;
+    try {
+        maxData = await cobaltFetch({
+            url: mediaUrl,
+            downloadMode: 'auto',
+            videoQuality: 'max',
+            audioFormat: 'best',
+        });
+    } catch (e) {
+        throw e; // If max fails, the URL is bad
+    }
+
+    // Detect platform
+    const lUrl = mediaUrl.toLowerCase();
+    const isYouTube = lUrl.includes('youtu');
+
+    // For non-YouTube, just return max
+    if (!isYouTube) {
+        const size = maxData.url ? await headRequest(maxData.url) : 0;
+        return [{
+            quality: 'max',
+            label: 'Best',
+            url: maxData.url || null,
+            audioUrl: maxData.audio || null,
+            picker: maxData.picker || null,
+            hasAudio: true,
+            needsMerge: false,
+            size,
+            status: maxData.status,
+        }];
+    }
+
+    // For YouTube: probe each quality in parallel (with concurrency limit)
+    const probeOne = async (q) => {
+        try {
+            const data = await cobaltFetch({
+                url: mediaUrl,
+                downloadMode: 'auto',
+                videoQuality: q,
+                audioFormat: 'best',
+            });
+
+            if (!data || data.status === 'error') return null;
+
+            // Determine if merge is needed
+            // Cobalt returns status='tunnel' with audio separate when it needs merging
+            const needsMerge = !!(data.audio && data.url && data.audio !== data.url);
+            const hasAudio = !needsMerge || !!FFMPEG_PATH;
+
+            // Get size
+            let size = 0;
+            if (data.url) {
+                size = await headRequest(data.url);
+                // If merge needed, add audio size
+                if (needsMerge && data.audio) {
+                    const aSize = await headRequest(data.audio);
+                    size += aSize;
+                }
+            }
+
+            return {
+                quality: q,
+                label: q + 'p',
+                url: data.url || null,
+                audioUrl: data.audio || null,
+                hasAudio,
+                needsMerge,
+                size,
+                status: data.status,
+            };
+        } catch (_) {
+            return null; // Quality not available
+        }
+    };
+
+    // Also probe max for YouTube
+    const maxNeedsMerge = !!(maxData.audio && maxData.url && maxData.audio !== maxData.url);
+    let maxSize = 0;
+    if (maxData.url) {
+        maxSize = await headRequest(maxData.url);
+        if (maxNeedsMerge && maxData.audio) {
+            const aSize = await headRequest(maxData.audio);
+            maxSize += aSize;
+        }
+    }
+
+    results.push({
+        quality: 'max',
+        label: 'Best',
+        url: maxData.url || null,
+        audioUrl: maxData.audio || null,
+        hasAudio: !maxNeedsMerge || !!FFMPEG_PATH,
+        needsMerge: maxNeedsMerge,
+        size: maxSize,
+        status: maxData.status,
+    });
+
+    // Probe all qualities in batches of 3
+    const batchSize = 3;
+    for (let i = 0; i < ALL_QUALITIES.length; i += batchSize) {
+        const batch = ALL_QUALITIES.slice(i, i + batchSize);
+        const batchResults = await Promise.all(batch.map(probeOne));
+        batchResults.forEach(r => { if (r) results.push(r); });
+    }
+
+    // Deduplicate by URL (some qualities map to same file)
+    const seen = new Set();
+    const deduped = [];
+    for (const r of results) {
+        const key = r.url || r.quality;
+        if (!seen.has(key)) {
+            seen.add(key);
+            deduped.push(r);
+        }
+    }
+
+    return deduped;
 }
 
 // ── FFmpeg helpers ────────────────────────────────────────────────────────────
@@ -263,6 +347,31 @@ function sendFile(res, filePath) {
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────
+
+/**
+ * NEW: /api/probe — probe all available qualities for a URL
+ * Returns array of available quality objects with size info
+ */
+async function handleProbe(req, res) {
+    let mediaUrl;
+    try {
+        const b = JSON.parse(await readBody(req));
+        mediaUrl = b.url;
+    } catch { return sendJSON(res, 400, { error: 'Invalid JSON body' }); }
+    if (!mediaUrl) return sendJSON(res, 400, { error: 'Missing url field' });
+
+    console.log(`\n[PROBE] ${mediaUrl}`);
+
+    try {
+        const qualities = await probeQualities(mediaUrl);
+        console.log(`  ✓ Found ${qualities.length} qualities`);
+        sendJSON(res, 200, { qualities, ffmpeg: !!FFMPEG_PATH });
+    } catch (e) {
+        console.error('[PROBE ERROR]', e.message);
+        sendJSON(res, 500, { error: e.message });
+    }
+}
+
 async function handleFetch(req, res) {
     let mediaUrl, quality, audioOnly;
     try {
@@ -277,7 +386,7 @@ async function handleFetch(req, res) {
         url: mediaUrl,
         downloadMode: audioOnly ? 'audio' : 'auto',
         videoQuality: quality === 'max' ? 'max' : String(quality),
-        audioFormat: audioOnly ? 'mp3' : 'best'
+        audioFormat: audioOnly ? 'mp3' : 'best',
     };
 
     try {
@@ -339,10 +448,19 @@ async function handleMerge(req, res) {
 
     console.log(`\n[MERGE] ${safe}`);
     try {
+        console.log('  Downloading video stream…');
         await downloadToFile(videoUrl, vp);
+        console.log('  Downloading audio stream…');
         await downloadToFile(audioUrl, ap);
+        console.log('  Merging with FFmpeg…');
         await mergeWithFFmpeg(vp, ap, op);
+
         const { size } = fs.statSync(op);
+        if (size === 0) {
+            cleanup();
+            return sendJSON(res, 500, { error: 'Merge produced empty file. FFmpeg failed silently.' });
+        }
+
         console.log(`  ✓ ${(size / 1024 / 1024).toFixed(1)} MB`);
         res.writeHead(200, {
             'Content-Type': 'video/mp4', 'Content-Length': size,
@@ -387,6 +505,7 @@ const server = http.createServer(async (req, res) => {
     try { pathname = new URL(req.url, 'http://localhost').pathname; }
     catch { pathname = '/'; }
 
+    if (pathname === '/api/probe' && req.method === 'POST') return handleProbe(req, res);
     if (pathname === '/api/fetch' && req.method === 'POST') return handleFetch(req, res);
     if (pathname === '/api/stream' && req.method === 'GET') return handleStream(req, res);
     if (pathname === '/api/merge' && req.method === 'POST') return handleMerge(req, res);
@@ -409,23 +528,13 @@ server.listen(PORT, () => {
 
     console.log(`
 ╔══════════════════════════════════════════════════════╗
-║  GRABR v3.0 — Media Downloader Backend               ║
+║  GRABR v3.1 — Media Downloader Backend               ║
 ║  http://localhost:${PORT}                                 ║
 ╠══════════════════════════════════════════════════════╣
 ║  FFmpeg  : ${FFMPEG_PATH ? '✓ ' + FFMPEG_PATH.padEnd(38) : '✗ not found'.padEnd(42)}║
 ║  Cobalt  : ${instanceLine.padEnd(42)}║
 ╚══════════════════════════════════════════════════════╝
-${!COBALT_INSTANCE ? `
-  ACTION REQUIRED:
-  ─────────────────────────────────────────────────────
-  1. Deploy your own Cobalt instance (free, 5 min):
-     → https://railway.com/deploy/cobalt-media-downloader
-
-  2. Set env var in Render dashboard → Environment:
-     COBALT_INSTANCE = https://your-railway-url.up.railway.app
-
-  3. Redeploy this GRABR service. Done.
-  ─────────────────────────────────────────────────────
-` : ''}
 `);
 });
+
+console.log(JSON.stringify(data, null, 2));

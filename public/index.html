@@ -494,6 +494,7 @@
             font-weight: 500
         }
 
+        /* Quality grid */
         .q-grid {
             display: flex;
             flex-wrap: wrap;
@@ -502,7 +503,7 @@
         }
 
         .q-btn {
-            padding: 7px 16px;
+            padding: 9px 16px;
             border: 1px solid var(--border);
             border-radius: var(--r-sm);
             background: var(--s2);
@@ -512,7 +513,8 @@
             font-weight: 500;
             cursor: pointer;
             transition: all .13s;
-            position: relative
+            text-align: center;
+            min-width: 80px
         }
 
         .q-btn:hover {
@@ -526,16 +528,51 @@
             color: var(--red)
         }
 
+        .q-btn .q-label {
+            display: block;
+            font-size: .85rem;
+            font-weight: 600
+        }
+
         .q-btn .q-note {
             display: block;
-            font-size: .6rem;
+            font-size: .62rem;
             color: var(--muted);
-            margin-top: 1px;
+            margin-top: 2px;
             font-weight: 400
         }
 
+        .q-btn .q-size {
+            display: block;
+            font-size: .65rem;
+            color: var(--blue);
+            margin-top: 1px;
+            font-weight: 500
+        }
+
         .q-btn.sel .q-note {
-            color: rgba(255, 48, 64, .6)
+            color: rgba(255, 48, 64, .55)
+        }
+
+        .q-btn.sel .q-size {
+            color: rgba(79, 195, 247, .8)
+        }
+
+        /* Probe loading state */
+        .probe-loading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px;
+            background: var(--s2);
+            border-radius: var(--r-sm);
+            margin-bottom: 18px;
+            color: var(--muted);
+            font-size: .85rem
+        }
+
+        .probe-loading .spin {
+            flex-shrink: 0
         }
 
         .info-box {
@@ -599,52 +636,6 @@
             opacity: .4;
             cursor: not-allowed;
             pointer-events: none
-        }
-
-        .dl-btn.secondary {
-            background: var(--s3);
-            color: var(--text);
-            border: 1px solid var(--border);
-            font-size: .85rem;
-            letter-spacing: 1px;
-            font-family: 'DM Sans', sans-serif;
-            font-weight: 600;
-            margin-top: 8px
-        }
-
-        .dl-btn.secondary:hover {
-            border-color: var(--red);
-            color: var(--red)
-        }
-
-        .prog {
-            margin-top: 12px;
-            display: none
-        }
-
-        .prog.show {
-            display: block
-        }
-
-        .prog-bar {
-            height: 3px;
-            background: var(--s3);
-            border-radius: 100px;
-            overflow: hidden
-        }
-
-        .prog-fill {
-            height: 100%;
-            border-radius: 100px;
-            background: linear-gradient(90deg, var(--red), var(--orange));
-            width: 0%;
-            transition: width .3s
-        }
-
-        .prog-txt {
-            font-size: .75rem;
-            color: var(--muted);
-            margin-top: 6px
         }
 
         .img-controls {
@@ -904,7 +895,7 @@
     <section class="hero">
         <div class="hero-glow"></div>
         <h1>GRAB ANY<br /><em>MEDIA.</em></h1>
-        <p class="hero-sub">Paste a link — pick quality — download with audio. No signup, no tracking.</p>
+        <p class="hero-sub">Paste a link — see real available qualities + sizes — download with audio.</p>
     </section>
 
     <div class="wrap" style="margin-bottom:18px">
@@ -932,54 +923,42 @@
 
     <section class="steps">
         <div class="steps-inner">
-            <h3>Audio &amp; Quality Guide</h3>
+            <h3>How Quality Detection Works</h3>
             <div class="step">
-                <div class="step-n">🎬</div>
-                <p><strong>Instagram / TikTok</strong> — always have audio built in. Download directly, full quality.
-                </p>
+                <div class="step-n">🔍</div>
+                <p><strong>Real-time probing</strong> — GRABR queries the server for each quality to check if it
+                    actually exists for this video. Only available qualities are shown.</p>
             </div>
             <div class="step">
-                <div class="step-n">📺</div>
-                <p><strong>YouTube 360p / 480p</strong> — audio already embedded in the file. No merging needed.</p>
+                <div class="step-n">📐</div>
+                <p><strong>Size estimates</strong> — File sizes are fetched from the CDN headers before you download, so
+                    you know exactly what you're getting.</p>
             </div>
             <div class="step">
-                <div class="step-n">🏆</div>
-                <p><strong>YouTube 720p and above</strong> — YouTube serves video and audio as separate streams. The
-                    server automatically merges them using FFmpeg so you get <strong>full audio + video</strong> in one
-                    file.</p>
+                <div class="step-n">🔀</div>
+                <p><strong>YouTube 720p+</strong> — YouTube separates video and audio streams. FFmpeg on the server
+                    merges them into one file with full audio.</p>
             </div>
             <div class="step">
                 <div class="step-n">🎵</div>
-                <p>Switch to <strong>Audio Only</strong> mode to download just the MP3 from any video.</p>
+                <p>Switch to <strong>Audio Only</strong> to download just the MP3 from any video.</p>
             </div>
         </div>
     </section>
 
     <script>
-        // ── CONFIG ─────────────────────────────────────────────────────────────────────
-        // Detect backend URL: same-origin if running via node server/index.js,
-        // or update REMOTE_BACKEND to your deployed server URL.
-        const REMOTE_BACKEND = 'https://grabr.onrender.com'; // ← update if you deploy elsewhere
-
+        // ── CONFIG ────────────────────────────────────────────────────────────────────
+        const REMOTE_BACKEND = 'https://grabr.onrender.com';
         const BACKEND = (() => {
             const h = window.location.hostname;
-            // localhost / LAN / GitHub dev tunnels all go to same origin
-            if (h === 'localhost' || h === '127.0.0.1' || h.endsWith('.app.github.dev')) {
-                return window.location.origin;
-            }
+            if (h === 'localhost' || h === '127.0.0.1' || h.endsWith('.app.github.dev')) return window.location.origin;
             return REMOTE_BACKEND;
         })();
 
-        // NOTE: Direct-to-Cobalt browser fallback is removed intentionally.
-        // Cobalt community instances require server-side requests (no CORS from browsers).
-        // All requests must go through the Node.js backend.
-
         let currentMode = 'video';
-        let selectedQuality = 'max';
-        let selectedImages = new Set();
         let serverHasFFmpeg = false;
 
-        // ── SERVER CHECK ────────────────────────────────────────────────────────────────
+        // ── SERVER CHECK ──────────────────────────────────────────────────────────────
         async function checkServer() {
             const dot = document.getElementById('srv-dot');
             const txt = document.getElementById('srv-txt');
@@ -1001,7 +980,7 @@
             }
         }
 
-        // ── PLATFORM DETECTION ──────────────────────────────────────────────────────────
+        // ── PLATFORM DETECTION ────────────────────────────────────────────────────────
         function detectPlatform(u) {
             if (!u) return null;
             const l = u.toLowerCase();
@@ -1013,25 +992,11 @@
         }
 
         const PL = {
-            youtube: { label: '▶ YouTube / Shorts', cls: 'youtube', icon: '▶', q: ['max', '2160', '1440', '1080', '720', '480', '360'] },
-            instagram: { label: '◈ Instagram', cls: 'instagram', icon: '◈', q: ['max'] },
-            tiktok: { label: '♪ TikTok', cls: 'tiktok', icon: '♪', q: ['max'] },
-            twitter: { label: '𝕏 Twitter / X', cls: 'twitter', icon: '𝕏', q: ['max', '1080', '720', '480'] },
+            youtube: { label: '▶ YouTube / Shorts', cls: 'youtube', icon: '▶' },
+            instagram: { label: '◈ Instagram', cls: 'instagram', icon: '◈' },
+            tiktok: { label: '♪ TikTok', cls: 'tiktok', icon: '♪' },
+            twitter: { label: '𝕏 Twitter / X', cls: 'twitter', icon: '𝕏' },
         };
-
-        function audioStatus(platform, quality) {
-            if (platform !== 'youtube') return { has: true, label: '🔊 Audio included' };
-            const q = parseInt(quality) || 9999;
-            if (quality === 'max') {
-                return serverHasFFmpeg
-                    ? { merge: true, label: '🔀 Server will merge audio' }
-                    : { warn: true, label: '⚠ 720p+ may lack audio without FFmpeg' };
-            }
-            if (q <= 480) return { has: true, label: '🔊 Audio included' };
-            return serverHasFFmpeg
-                ? { merge: true, label: '🔀 Server will merge audio' }
-                : { warn: true, label: '⚠ Install FFmpeg on server for audio' };
-        }
 
         const inp = document.getElementById('url-input');
         const pill = document.getElementById('det-pill');
@@ -1060,12 +1025,10 @@
                 const t = await navigator.clipboard.readText();
                 inp.value = t;
                 inp.dispatchEvent(new Event('input'));
-            } catch {
-                inp.focus();
-            }
+            } catch { inp.focus(); }
         }
 
-        // ── FETCH ────────────────────────────────────────────────────────────────────────
+        // ── FETCH FLOW ────────────────────────────────────────────────────────────────
         async function doFetch() {
             const rawUrl = inp.value.trim();
             if (!rawUrl) return showAlert('err', 'Please paste a link first.');
@@ -1074,13 +1037,19 @@
 
             const btn = document.getElementById('fetch-btn');
             btn.disabled = true;
-            btn.innerHTML = '<span class="spin"></span> GRABBING…';
+            btn.innerHTML = '<span class="spin"></span> PROBING QUALITIES…';
             document.getElementById('result-area').innerHTML = '';
-            selectedQuality = 'max';
 
             try {
-                const data = await callBackend(rawUrl, 'max', currentMode === 'audio');
-                renderResult(data, platform, rawUrl);
+                if (currentMode === 'audio') {
+                    // For audio mode, just do a single fetch
+                    const data = await callFetch(rawUrl, 'max', true);
+                    renderAudio(data, platform, rawUrl);
+                } else {
+                    // Probe all available qualities
+                    const result = await callProbe(rawUrl);
+                    renderResult(result, platform, rawUrl);
+                }
             } catch (e) {
                 showAlert('err', e.message || 'Could not fetch. Make sure the link is public and try again.');
             } finally {
@@ -1089,27 +1058,15 @@
             }
         }
 
-        /**
-         * All requests go through our Node backend — no direct browser-to-Cobalt calls.
-         * Cobalt v10 API payload:
-         *   url, downloadMode ('auto'|'audio'|'mute'), videoQuality ('144'..'2160'|'max'),
-         *   audioFormat ('best'|'mp3'|'ogg'|'wav'|'opus'), isNoTTWatermark, disableMetadata
-         */
-        async function callBackend(mediaUrl, quality = 'max', audioOnly = false) {
-            const payload = {
-                url: mediaUrl,
-                downloadMode: audioOnly ? 'audio' : 'auto',
-                videoQuality: quality === 'max' ? 'max' : String(quality),
-                audioFormat: audioOnly ? 'mp3' : 'best'
-            };
-
+        /** Call /api/probe to get all available qualities with sizes */
+        async function callProbe(mediaUrl) {
             const ctrl = new AbortController();
-            const tid = setTimeout(() => ctrl.abort(), 30000);
+            const tid = setTimeout(() => ctrl.abort(), 90000); // probing takes time
             try {
-                const r = await fetch(BACKEND + '/api/fetch', {
+                const r = await fetch(BACKEND + '/api/probe', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
+                    body: JSON.stringify({ url: mediaUrl }),
                     signal: ctrl.signal,
                 });
                 clearTimeout(tid);
@@ -1118,172 +1075,241 @@
                 return d;
             } catch (e) {
                 clearTimeout(tid);
-                if (e.name === 'AbortError') throw new Error('Request timed out (30s). Try again.');
-                // If backend is unreachable entirely
-                if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+                if (e.name === 'AbortError') throw new Error('Quality detection timed out. Try again.');
+                if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))
                     throw new Error('Cannot reach backend server. Start it with: node server/index.js');
-                }
                 throw e;
             }
         }
 
-        // ── RENDER ────────────────────────────────────────────────────────────────────────
-        function renderResult(data, platform, origUrl) {
-            // Cobalt v10 statuses: 'tunnel' | 'redirect' | 'picker' | 'error' | 'rate-limit'
-            if ((data.status === 'picker' || data.picker) && Array.isArray(data.picker) && data.picker.length) {
-                return renderPicker(data, platform);
+        /** Call /api/fetch for a specific quality */
+        async function callFetch(mediaUrl, quality = 'max', audioOnly = false) {
+            const ctrl = new AbortController();
+            const tid = setTimeout(() => ctrl.abort(), 30000);
+            try {
+                const r = await fetch(BACKEND + '/api/fetch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: mediaUrl, quality, audioOnly }),
+                    signal: ctrl.signal,
+                });
+                clearTimeout(tid);
+                const d = await r.json();
+                if (d.error) throw new Error(d.error);
+                return d;
+            } catch (e) {
+                clearTimeout(tid);
+                if (e.name === 'AbortError') throw new Error('Request timed out.');
+                throw e;
             }
-            // tunnel = cobalt is proxying; redirect = direct CDN link
-            if (data.url && (data.status === 'tunnel' || data.status === 'redirect' || data.status === 'stream' || data.status === 'local-processing')) {
-                return renderSingle(data, platform, origUrl);
-            }
-            // Fallback: if url exists without a recognised status (some instances omit status)
-            if (data.url) {
-                return renderSingle(data, platform, origUrl);
-            }
-            if (data.status === 'error' || data.error) {
-                return showAlert('err', interpretErr(data.error?.code || data.text || data.error || 'Unknown', platform));
-            }
-            if (data.status === 'rate-limit') {
-                return showAlert('warn', 'Rate limited by the download server. Please wait a minute and try again.');
-            }
-            showAlert('warn', 'Unexpected response from server. Please try again.');
-            console.warn('[GRABR] Unexpected response:', data);
         }
 
-        function interpretErr(code, platform) {
-            const c = String(code).toLowerCase();
-            if (c.includes('private') || c.includes('login') || c.includes('auth'))
-                return 'This content is private or requires login. Only public content can be downloaded.';
-            if (c.includes('age') || c.includes('restricted'))
-                return 'Age-restricted content cannot be downloaded without authentication.';
-            if (c.includes('rate') || c.includes('limit'))
-                return 'Rate limited. Please wait a minute and try again.';
-            if (c.includes('unavailable') || c.includes('not found'))
-                return 'This content is unavailable (deleted, region-locked, or the link is wrong).';
-            if (c.includes('instance') || c.includes('all'))
-                return 'All download servers are currently unavailable. Please try again in a moment.';
-            return `Download failed: ${code}`;
+        // ── FORMAT HELPERS ────────────────────────────────────────────────────────────
+        function fmtSize(bytes) {
+            if (!bytes || bytes === 0) return null;
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+            return (bytes / 1024 / 1024).toFixed(1) + ' MB';
         }
 
-        // ── SINGLE VIDEO ──────────────────────────────────────────────────────────────────
-        function renderSingle(data, platform, origUrl) {
-            const area = document.getElementById('result-area');
+        // ── RENDER ────────────────────────────────────────────────────────────────────
+        function renderResult(probeResult, platform, origUrl) {
+            const { qualities, ffmpeg } = probeResult;
+
+            if (!qualities || qualities.length === 0) {
+                return showAlert('err', 'No downloadable qualities found for this URL.');
+            }
+
+            // Check if it's a picker (Instagram multi-image)
+            const first = qualities[0];
+            if (first.picker && Array.isArray(first.picker)) {
+                return renderPicker({ picker: first.picker }, platform);
+            }
+
+            // Single video render
             const pl = PL[platform] || PL.youtube;
-            const dlUrl = data.url || '';
-            const filename = data.filename || `${platform}_video.mp4`;
-            const qualities = pl.q;
-            selectedQuality = qualities[0];
+            const area = document.getElementById('result-area');
 
-            const ast = audioStatus(platform, selectedQuality);
-            const audioBadge = ast.has
-                ? '<span class="audio-badge has">🔊 Audio included</span>'
-                : ast.merge
-                    ? '<span class="audio-badge merge">🔀 Server merges audio</span>'
-                    : '<span class="audio-badge none">⚠ Audio may be missing</span>';
+            // Default select first (best) quality
+            let selectedIdx = 0;
+            const sel = qualities[selectedIdx];
+
+            const audioBadge = sel.needsMerge
+                ? '<span class="audio-badge merge">🔀 Server merges audio</span>'
+                : '<span class="audio-badge has">🔊 Audio included</span>';
 
             area.innerHTML = `
-  <div class="card">
+<div class="card">
     <div class="card-head">
-      <div class="card-icon">${esc(pl.icon)}</div>
-      <div class="card-meta">
-        <div class="card-title" title="${esc(filename)}">${esc(filename)}</div>
-        <div class="card-sub">${esc(pl.label)} &nbsp;·&nbsp; ${audioBadge}</div>
-      </div>
+        <div class="card-icon">${esc(pl.icon)}</div>
+        <div class="card-meta">
+            <div class="card-title">Ready to download</div>
+            <div class="card-sub">${esc(pl.label)} &nbsp;·&nbsp; <span id="badge-wrap">${audioBadge}</span></div>
+        </div>
     </div>
     <div class="card-body">
-      <div id="audio-info">${buildAudioInfo(audioStatus(platform, selectedQuality))}</div>
-      <div class="sec-label">Select Quality</div>
-      <div class="q-grid" id="q-grid"></div>
-      <div class="prog" id="prog">
-        <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
-        <div class="prog-txt" id="prog-txt">Preparing…</div>
-      </div>
-      <button class="dl-btn" id="main-dl">⬇ DOWNLOAD</button>
+        <div id="audio-info">${buildAudioInfo(sel, ffmpeg)}</div>
+        <div class="sec-label">Available Qualities (${qualities.length} found)</div>
+        <div class="q-grid" id="q-grid"></div>
+        <button class="dl-btn" id="main-dl">⬇ DOWNLOAD</button>
     </div>
-  </div>`;
+</div>`;
 
-            // Set download handler after rendering (avoids inline onclick with URLs)
-            document.getElementById('main-dl').onclick = () => startDownload(dlUrl, filename, platform);
-
-            buildQGrid(qualities, dlUrl, origUrl, platform, filename);
+            buildQGrid(qualities, platform, ffmpeg);
+            // Select first by default
+            selectQuality(0, qualities, platform, ffmpeg);
         }
 
-        function buildAudioInfo(ast) {
-            if (ast.has) return '<div class="info-box green"><span class="info-ico">✓</span><span>This file already contains audio — download and play directly.</span></div>';
-            if (ast.merge) return '<div class="info-box orange"><span class="info-ico">🔀</span><span>YouTube serves video and audio separately for high quality. The server will merge them with FFmpeg — your final file will have full audio.</span></div>';
-            return '<div class="info-box red"><span class="info-ico">⚠</span><span>FFmpeg is not installed on the server. For 720p+ YouTube videos, audio may be missing. Install FFmpeg or choose 480p/360p which have audio built in.</span></div>';
-        }
-
-        function buildQGrid(qualities, currentDlUrl, origUrl, platform, filename) {
+        function buildQGrid(qualities, platform, ffmpeg) {
             const grid = document.getElementById('q-grid');
             if (!grid) return;
+            grid.innerHTML = '';
+
             qualities.forEach((q, i) => {
                 const btn = document.createElement('button');
-                btn.className = 'q-btn' + (i === 0 ? ' sel' : '');
-                const ast2 = audioStatus(platform, q);
-                const note = ast2.has ? '🔊 audio' : ast2.merge ? '🔀 merged' : '⚠ check audio';
-                btn.innerHTML = `${q === 'max' ? '🏆 Best' : q + 'p'}<span class="q-note">${note}</span>`;
-                btn.onclick = async () => {
-                    document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('sel'));
-                    btn.classList.add('sel');
-                    selectedQuality = q;
+                btn.className = 'q-btn';
+                btn.dataset.idx = i;
 
-                    const aInfo = document.getElementById('audio-info');
-                    if (aInfo) aInfo.innerHTML = buildAudioInfo(audioStatus(platform, q));
+                const sizeStr = fmtSize(q.size);
+                const noteStr = q.needsMerge ? (ffmpeg ? '🔀 merged' : '⚠ no FFmpeg') : '🔊 audio';
 
-                    const dl = document.getElementById('main-dl');
-                    if (!dl) return;
-                    dl.disabled = true;
-                    dl.innerHTML = '<span class="spin"></span>';
-
-                    try {
-                        const d = await callBackend(origUrl, q, currentMode === 'audio');
-                        const newUrl = d.url || currentDlUrl;
-                        dl.disabled = false;
-                        dl.onclick = () => startDownload(newUrl, filename, platform);
-                        dl.innerHTML = '⬇ DOWNLOAD ' + (q === 'max' ? 'BEST' : q + 'P');
-                    } catch (e) {
-                        dl.disabled = false;
-                        dl.innerHTML = '⬇ DOWNLOAD';
-                        showAlert('warn', 'Could not fetch that quality: ' + e.message);
-                    }
-                };
+                btn.innerHTML = `
+            <span class="q-label">${q.label === 'Best' ? '🏆 Best' : q.label}</span>
+            <span class="q-note">${noteStr}</span>
+            ${sizeStr ? `<span class="q-size">${sizeStr}</span>` : ''}
+        `;
+                btn.onclick = () => selectQuality(i, qualities, platform, ffmpeg);
                 grid.appendChild(btn);
             });
         }
 
-        function startDownload(dlUrl, filename, platform) {
-            if (!dlUrl) return showAlert('err', 'No download URL available. Please try fetching again.');
-            // Always proxy through backend to force Content-Disposition download header
-            // and avoid browser blocking cross-origin media
-            const proxied = `${BACKEND}/api/stream?url=${encodeURIComponent(dlUrl)}&filename=${encodeURIComponent(filename)}`;
-            triggerDownload(proxied, filename);
+        function selectQuality(idx, qualities, platform, ffmpeg) {
+            // Update button selection
+            document.querySelectorAll('#q-grid .q-btn').forEach((b, i) => {
+                b.className = 'q-btn' + (i === idx ? ' sel' : '');
+            });
+
+            const q = qualities[idx];
+
+            // Update audio info
+            const aInfo = document.getElementById('audio-info');
+            if (aInfo) aInfo.innerHTML = buildAudioInfo(q, ffmpeg);
+
+            // Update badge
+            const badgeWrap = document.getElementById('badge-wrap');
+            if (badgeWrap) {
+                badgeWrap.innerHTML = q.needsMerge
+                    ? '<span class="audio-badge merge">🔀 Server merges audio</span>'
+                    : '<span class="audio-badge has">🔊 Audio included</span>';
+            }
+
+            // Update download button
+            const dlBtn = document.getElementById('main-dl');
+            if (!dlBtn) return;
+
+            const sizeStr = fmtSize(q.size);
+            const label = q.label === 'Best' ? 'BEST' : q.label.toUpperCase();
+            dlBtn.innerHTML = `⬇ DOWNLOAD ${label}${sizeStr ? ' · ' + sizeStr : ''}`;
+
+            if (q.needsMerge && q.url && q.audioUrl && ffmpeg) {
+                // Use merge endpoint
+                dlBtn.onclick = () => doMergeDownload(q.url, q.audioUrl, `video_${q.quality || 'best'}.mp4`);
+            } else if (q.url) {
+                // Direct stream
+                const filename = `video_${q.quality || 'best'}.mp4`;
+                dlBtn.onclick = () => triggerStream(q.url, filename);
+            } else {
+                dlBtn.disabled = true;
+                dlBtn.innerHTML = '✗ Not available';
+            }
         }
 
-        function triggerDownload(href, filename) {
+        function buildAudioInfo(q, ffmpeg) {
+            if (!q.needsMerge) {
+                return '<div class="info-box green"><span class="info-ico">✓</span><span>This file already contains audio — download and play directly.</span></div>';
+            }
+            if (ffmpeg) {
+                return '<div class="info-box orange"><span class="info-ico">🔀</span><span>YouTube serves video and audio separately for high quality. The server will merge them with FFmpeg — your final file will have full audio.</span></div>';
+            }
+            return '<div class="info-box red"><span class="info-ico">⚠</span><span>FFmpeg is not installed on the server. This quality requires merging — choose 480p or 360p instead (audio is embedded).</span></div>';
+        }
+
+        // ── AUDIO ONLY ────────────────────────────────────────────────────────────────
+        function renderAudio(data, platform, origUrl) {
+            const pl = PL[platform] || PL.youtube;
+            const area = document.getElementById('result-area');
+            const dlUrl = data.url || '';
+            const filename = data.filename || 'audio.mp3';
+
+            area.innerHTML = `
+<div class="card">
+    <div class="card-head">
+        <div class="card-icon">🎵</div>
+        <div class="card-meta">
+            <div class="card-title">Audio Ready</div>
+            <div class="card-sub">${esc(pl.label)} &nbsp;·&nbsp; <span class="audio-badge has">🎵 MP3</span></div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="info-box green"><span class="info-ico">🎵</span><span>Audio extracted at best available quality.</span></div>
+        <button class="dl-btn" id="audio-dl">⬇ DOWNLOAD MP3</button>
+    </div>
+</div>`;
+
+            document.getElementById('audio-dl').onclick = () => triggerStream(dlUrl, filename);
+        }
+
+        // ── DOWNLOAD HELPERS ──────────────────────────────────────────────────────────
+        function triggerStream(dlUrl, filename) {
+            if (!dlUrl) return showAlert('err', 'No download URL available.');
+            const proxied = `${BACKEND}/api/stream?url=${encodeURIComponent(dlUrl)}&filename=${encodeURIComponent(filename)}`;
             const a = document.createElement('a');
-            a.href = href;
+            a.href = proxied;
             a.download = filename;
             a.target = '_blank';
             a.rel = 'noopener noreferrer';
             document.body.appendChild(a);
             a.click();
-            // Small delay before removal to ensure click registers
             setTimeout(() => document.body.removeChild(a), 200);
         }
 
-        function setProgress(show, txt = '', pct = 0) {
-            const prog = document.getElementById('prog');
-            const fill = document.getElementById('prog-fill');
-            const ptxt = document.getElementById('prog-txt');
-            if (!prog) return;
-            prog.className = show ? 'prog show' : 'prog';
-            if (fill) fill.style.width = pct + '%';
-            if (ptxt) ptxt.textContent = txt;
+        async function doMergeDownload(videoUrl, audioUrl, filename) {
+            const dlBtn = document.getElementById('main-dl');
+            if (dlBtn) { dlBtn.disabled = true; dlBtn.innerHTML = '<span class="spin"></span> MERGING ON SERVER…'; }
+
+            try {
+                const r = await fetch(BACKEND + '/api/merge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ videoUrl, audioUrl, filename }),
+                });
+
+                if (!r.ok) {
+                    const err = await r.json().catch(() => ({ error: 'Merge failed' }));
+                    throw new Error(err.error || `HTTP ${r.status}`);
+                }
+
+                // Stream the response as a download
+                const blob = await r.blob();
+                if (blob.size === 0) throw new Error('Server returned empty file. Check FFmpeg logs.');
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 500);
+
+                if (dlBtn) { dlBtn.disabled = false; dlBtn.innerHTML = '✓ DOWNLOADED'; }
+            } catch (e) {
+                if (dlBtn) { dlBtn.disabled = false; dlBtn.innerHTML = '⬇ RETRY DOWNLOAD'; }
+                showAlert('err', 'Merge failed: ' + e.message);
+            }
         }
 
-        // ── PICKER (Instagram multi-image/video) ──────────────────────────────────────────
+        // ── PICKER ────────────────────────────────────────────────────────────────────
+        let selectedImages = new Set();
+
         function renderPicker(data, platform) {
             const area = document.getElementById('result-area');
             const items = data.picker;
@@ -1293,41 +1319,36 @@
                 const isVideo = item.type === 'video';
                 const thumb = item.thumb || item.url;
                 return `
-    <div class="img-item sel" data-idx="${i}" onclick="toggleImg(${i})">
-      <img src="${esc(thumb)}" alt="Item ${i + 1}" loading="lazy" onerror="this.style.display='none'"/>
-      <div class="img-check">✓</div>
-      <div class="img-num">${i + 1}</div>
-      ${isVideo ? '<div class="img-type">🎬 Video</div>' : ''}
-    </div>`;
+<div class="img-item sel" data-idx="${i}" onclick="toggleImg(${i})">
+    <img src="${esc(thumb)}" alt="Item ${i + 1}" loading="lazy" onerror="this.style.display='none'"/>
+    <div class="img-check">✓</div>
+    <div class="img-num">${i + 1}</div>
+    ${isVideo ? '<div class="img-type">🎬 Video</div>' : ''}
+</div>`;
             }).join('');
 
-            // Serialise items safely for the download handler
             const itemsB64 = btoa(unescape(encodeURIComponent(JSON.stringify(items))));
 
             area.innerHTML = `
-  <div class="card">
+<div class="card">
     <div class="card-head">
-      <div class="card-icon">◈</div>
-      <div class="card-meta">
-        <div class="card-title">Instagram Post — ${items.length} item${items.length > 1 ? 's' : ''}</div>
-        <div class="card-sub"><span class="audio-badge has">🔊 Audio included</span></div>
-      </div>
+        <div class="card-icon">◈</div>
+        <div class="card-meta">
+            <div class="card-title">Instagram Post — ${items.length} item${items.length > 1 ? 's' : ''}</div>
+            <div class="card-sub"><span class="audio-badge has">🔊 Audio included</span></div>
+        </div>
     </div>
     <div class="card-body">
-      <div class="info-box green"><span class="info-ico">✓</span><span>Instagram posts always have audio embedded in video items. Images download at original quality.</span></div>
-      <div class="img-controls">
-        <button class="ctrl-btn" onclick="selectAllImgs(true)">Select All</button>
-        <button class="ctrl-btn" onclick="selectAllImgs(false)">Deselect All</button>
-        <span class="sel-count" id="sel-count">${items.length} selected</span>
-      </div>
-      <div class="img-grid">${gridHTML}</div>
-      <div class="prog" id="prog">
-        <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
-        <div class="prog-txt" id="prog-txt">Downloading…</div>
-      </div>
-      <button class="dl-btn" id="dl-all-btn">⬇ DOWNLOAD SELECTED (${items.length})</button>
+        <div class="info-box green"><span class="info-ico">✓</span><span>Instagram posts always have audio embedded in video items.</span></div>
+        <div class="img-controls">
+            <button class="ctrl-btn" onclick="selectAllImgs(true)">Select All</button>
+            <button class="ctrl-btn" onclick="selectAllImgs(false)">Deselect All</button>
+            <span class="sel-count" id="sel-count">${items.length} selected</span>
+        </div>
+        <div class="img-grid">${gridHTML}</div>
+        <button class="dl-btn" id="dl-all-btn">⬇ DOWNLOAD SELECTED (${items.length})</button>
     </div>
-  </div>`;
+</div>`;
 
             document.getElementById('dl-all-btn').onclick = () => {
                 const decoded = JSON.parse(decodeURIComponent(escape(atob(itemsB64))));
@@ -1339,13 +1360,9 @@
             const el = document.querySelector(`.img-item[data-idx="${idx}"]`);
             if (!el) return;
             if (selectedImages.has(idx)) {
-                selectedImages.delete(idx);
-                el.classList.remove('sel');
-                el.querySelector('.img-check').textContent = '';
+                selectedImages.delete(idx); el.classList.remove('sel'); el.querySelector('.img-check').textContent = '';
             } else {
-                selectedImages.add(idx);
-                el.classList.add('sel');
-                el.querySelector('.img-check').textContent = '✓';
+                selectedImages.add(idx); el.classList.add('sel'); el.querySelector('.img-check').textContent = '✓';
             }
             const cnt = selectedImages.size;
             document.getElementById('sel-count').textContent = cnt + ' selected';
@@ -1356,15 +1373,8 @@
         function selectAllImgs(val) {
             document.querySelectorAll('.img-item').forEach(el => {
                 const idx = parseInt(el.dataset.idx);
-                if (val) {
-                    selectedImages.add(idx);
-                    el.classList.add('sel');
-                    el.querySelector('.img-check').textContent = '✓';
-                } else {
-                    selectedImages.delete(idx);
-                    el.classList.remove('sel');
-                    el.querySelector('.img-check').textContent = '';
-                }
+                if (val) { selectedImages.add(idx); el.classList.add('sel'); el.querySelector('.img-check').textContent = '✓'; }
+                else { selectedImages.delete(idx); el.classList.remove('sel'); el.querySelector('.img-check').textContent = ''; }
             });
             const cnt = selectedImages.size;
             document.getElementById('sel-count').textContent = cnt + ' selected';
@@ -1375,64 +1385,41 @@
         async function downloadSelected(items) {
             if (selectedImages.size === 0) return showAlert('warn', 'No items selected.');
             const toDownload = [...selectedImages].sort((a, b) => a - b).map(i => items[i]);
-            setProgress(true, 'Starting…', 0);
-
             for (let i = 0; i < toDownload.length; i++) {
                 const item = toDownload[i];
                 const ext = item.type === 'video' ? 'mp4' : getExt(item.url);
                 const fname = `instagram_${i + 1}.${ext}`;
-                setProgress(true, `Downloading ${i + 1} / ${toDownload.length}…`, ((i + 1) / toDownload.length) * 100);
-
-                const dlUrl = `${BACKEND}/api/stream?url=${encodeURIComponent(item.url)}&filename=${encodeURIComponent(fname)}`;
-                triggerDownload(dlUrl, fname);
-
-                if (i < toDownload.length - 1) await sleep(800); // stagger to avoid browser blocking
+                triggerStream(item.url, fname);
+                if (i < toDownload.length - 1) await sleep(800);
             }
-            setProgress(true, `Done! ${toDownload.length} file${toDownload.length > 1 ? 's' : ''} downloading.`, 100);
-            setTimeout(() => setProgress(false), 4000);
         }
 
-        // ── UTILS ─────────────────────────────────────────────────────────────────────────
+        // ── UTILS ─────────────────────────────────────────────────────────────────────
         function showAlert(type, msg) {
             const icons = { err: '⚠', warn: 'ℹ', ok: '✓' };
             document.getElementById('result-area').innerHTML = `
-  <div class="alert ${type}">
+<div class="alert ${type}">
     <div class="alert-ico">${icons[type] || 'ℹ'}</div>
     <div>${esc(msg)}</div>
-  </div>`;
+</div>`;
         }
 
         function esc(s) {
             if (!s) return '';
-            return String(s)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
-
         function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
         function getExt(u) {
-            try {
-                const m = new URL(u).pathname.match(/\.(\w{2,4})(\?|$)/);
-                return m ? m[1] : 'jpg';
-            } catch { return 'jpg'; }
+            try { const m = new URL(u).pathname.match(/\.(\w{2,4})(\?|$)/); return m ? m[1] : 'jpg'; }
+            catch { return 'jpg'; }
         }
 
-        // ── KEYBOARD & AUTO-PASTE ──────────────────────────────────────────────────────────
         inp.addEventListener('keydown', e => { if (e.key === 'Enter') doFetch(); });
-
         window.addEventListener('focus', async () => {
             if (inp.value) return;
-            try {
-                const t = await navigator.clipboard.readText();
-                if (detectPlatform(t)) { inp.value = t; inp.dispatchEvent(new Event('input')); }
-            } catch (_) { }
+            try { const t = await navigator.clipboard.readText(); if (detectPlatform(t)) { inp.value = t; inp.dispatchEvent(new Event('input')); } } catch (_) { }
         });
 
-        // ── INIT ────────────────────────────────────────────────────────────────────────────
         checkServer();
     </script>
 </body>
