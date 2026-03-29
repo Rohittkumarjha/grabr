@@ -393,6 +393,7 @@ async function handleFetch(req, res) {
         const data = await cobaltFetch(payload);
         data._ffmpeg = !!FFMPEG_PATH;
         sendJSON(res, 200, data);
+        console.log(JSON.stringify(data, null, 2));
     } catch (e) {
         console.error('[FETCH ERROR]', e.message);
         sendJSON(res, 500, { error: e.message });
@@ -536,3 +537,4 @@ server.listen(PORT, () => {
 ╚══════════════════════════════════════════════════════╝
 `);
 });
+
