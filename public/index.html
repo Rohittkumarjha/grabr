@@ -1,1345 +1,616 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GRABR — Media Downloader</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,300&display=swap"
-        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet" />
     <style>
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0
-        }
-
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
         :root {
-            --bg: #080809;
-            --s1: #111114;
-            --s2: #18181c;
-            --s3: #222228;
-            --border: #2a2a32;
-            --red: #ff3040;
-            --orange: #ff8c00;
-            --text: #efefef;
-            --muted: #5a5a6a;
-            --muted2: #3a3a48;
-            --green: #00e676;
-            --blue: #4fc3f7;
-            --r: 14px;
-            --r-sm: 9px;
+            --bg:#080809; --s1:#111114; --s2:#18181c; --s3:#222228;
+            --border:#2a2a32; --red:#ff3040; --orange:#ff8c00;
+            --text:#efefef; --muted:#5a5a6a; --muted2:#3a3a48;
+            --green:#00e676; --blue:#4fc3f7; --r:14px; --r-sm:9px;
         }
+        html { scroll-behavior: smooth }
+        body { background:var(--bg); color:var(--text); font-family:'DM Sans',system-ui,sans-serif; min-height:100vh; overflow-x:hidden }
+        body::after { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"); pointer-events:none; z-index:9999; opacity:.5 }
 
-        html {
-            scroll-behavior: smooth
-        }
+        header { display:flex; align-items:center; justify-content:space-between; padding:20px 40px; border-bottom:1px solid var(--border); position:sticky; top:0; background:rgba(8,8,9,.92); backdrop-filter:blur(24px); z-index:100 }
+        .logo { font-family:'Bebas Neue',sans-serif; font-size:1.9rem; letter-spacing:5px; background:linear-gradient(110deg,var(--red),var(--orange)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text }
+        .logo-sub { font-family:'DM Sans',sans-serif; font-size:.62rem; letter-spacing:2.5px; color:var(--muted); display:block; margin-top:-5px }
+        .pills { display:flex; gap:6px; flex-wrap:wrap }
+        .pill { padding:4px 11px; border-radius:100px; border:1px solid var(--border); font-size:.7rem; font-weight:500; color:var(--muted) }
+        .pill.yt { border-color:rgba(255,48,64,.35); color:#ff7070 }
+        .pill.ig { border-color:rgba(193,53,132,.35); color:#e879a0 }
+        .pill.tt { border-color:rgba(105,201,208,.35); color:#69c9d0 }
 
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'DM Sans', system-ui, sans-serif;
-            min-height: 100vh;
-            overflow-x: hidden
-        }
+        .hero { text-align:center; padding:70px 20px 44px; position:relative; overflow:hidden }
+        .hero-glow { position:absolute; top:-40px; left:50%; transform:translateX(-50%); width:700px; height:360px; background:radial-gradient(ellipse,rgba(255,48,64,.11) 0%,transparent 68%); pointer-events:none }
+        h1 { font-family:'Bebas Neue',sans-serif; font-size:clamp(3.2rem,9vw,7.5rem); line-height:.92; letter-spacing:1px }
+        h1 em { font-style:normal; background:linear-gradient(130deg,var(--red) 0%,var(--orange) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text }
+        .hero-sub { color:var(--muted); margin-top:18px; font-size:.95rem; font-weight:300; letter-spacing:.3px }
 
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-            pointer-events: none;
-            z-index: 9999;
-            opacity: .5
-        }
+        .wrap { max-width:760px; margin:0 auto; padding:0 20px }
+        .url-wrap { background:var(--s1); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; transition:border-color .2s,box-shadow .2s; display:flex; align-items:center }
+        .url-wrap:focus-within { border-color:var(--red); box-shadow:0 0 0 3px rgba(255,48,64,.07) }
+        .url-icon { padding:0 14px; color:var(--muted); font-size:1.05rem; flex-shrink:0 }
+        #url-input { flex:1; background:transparent; border:none; outline:none; color:var(--text); font-family:'DM Sans',sans-serif; font-size:.93rem; padding:17px 0; caret-color:var(--red) }
+        #url-input::placeholder { color:var(--muted) }
+        .paste-btn { background:transparent; border:none; border-left:1px solid var(--border); color:var(--muted); padding:0 15px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:.75rem; letter-spacing:.6px; transition:color .15s; flex-shrink:0; min-height:54px }
+        .paste-btn:hover { color:var(--text) }
 
-        header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px 40px;
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            background: rgba(8, 8, 9, .92);
-            backdrop-filter: blur(24px);
-            z-index: 100
-        }
+        .platform-row { min-height:28px; display:flex; align-items:center; gap:8px; margin-top:7px; padding-left:4px }
+        .det-pill { display:inline-flex; align-items:center; gap:5px; padding:3px 11px; border-radius:100px; font-size:.74rem; font-weight:500; opacity:0; transform:translateY(-4px); transition:opacity .25s,transform .25s }
+        .det-pill.show { opacity:1; transform:translateY(0) }
+        .det-pill.youtube  { background:rgba(255,48,64,.1);  border:1px solid rgba(255,48,64,.3);  color:#ff7070 }
+        .det-pill.instagram{ background:rgba(193,53,132,.1); border:1px solid rgba(193,53,132,.3); color:#e879a0 }
+        .det-pill.tiktok   { background:rgba(105,201,208,.1);border:1px solid rgba(105,201,208,.3);color:#69c9d0 }
+        .det-pill.twitter  { background:rgba(100,116,139,.1);border:1px solid rgba(100,116,139,.3);color:#94a3b8 }
 
-        .logo {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.9rem;
-            letter-spacing: 5px;
-            background: linear-gradient(110deg, var(--red), var(--orange));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text
-        }
+        #mode-row { display:flex; gap:6px; margin-top:10px; opacity:0; transition:opacity .3s; pointer-events:none }
+        #mode-row.show { opacity:1; pointer-events:auto }
+        .mode-btn { flex:1; padding:8px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--s2); color:var(--muted); font-family:'DM Sans',sans-serif; font-size:.78rem; cursor:pointer; transition:all .15s }
+        .mode-btn.active { border-color:var(--red); background:rgba(255,48,64,.08); color:var(--red) }
 
-        .logo-sub {
-            font-family: 'DM Sans', sans-serif;
-            font-size: .62rem;
-            letter-spacing: 2.5px;
-            -webkit-text-fill-color: var(--muted);
-            color: var(--muted);
-            display: block;
-            margin-top: -5px
-        }
+        #fetch-btn { width:100%; margin-top:10px; padding:15px; background:linear-gradient(130deg,var(--red),var(--orange)); color:#fff; border:none; border-radius:var(--r); font-family:'Bebas Neue',sans-serif; font-size:1.25rem; letter-spacing:3.5px; cursor:pointer; transition:opacity .2s,transform .1s; display:flex; align-items:center; justify-content:center; gap:9px; position:relative; overflow:hidden }
+        #fetch-btn::after { content:''; position:absolute; inset:0; background:linear-gradient(rgba(255,255,255,.08),transparent) }
+        #fetch-btn:hover { opacity:.9 }
+        #fetch-btn:active { transform:scale(.99) }
+        #fetch-btn:disabled { opacity:.45; cursor:not-allowed }
 
-        .pills {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap
-        }
+        .srv-bar { text-align:center; padding:9px; color:var(--muted); font-size:.72rem; margin-top:8px; display:flex; align-items:center; justify-content:center; gap:6px }
+        .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--muted2) }
+        .dot.ok { background:var(--green) }
+        .dot.err { background:var(--red) }
 
-        .pill {
-            padding: 4px 11px;
-            border-radius: 100px;
-            border: 1px solid var(--border);
-            font-size: .7rem;
-            font-weight: 500;
-            letter-spacing: .4px;
-            color: var(--muted)
-        }
+        #result-area { max-width:760px; margin:28px auto 70px; padding:0 20px }
+        @keyframes up { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 
-        .pill.yt {
-            border-color: rgba(255, 48, 64, .35);
-            color: #ff7070
-        }
+        .card { background:var(--s1); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; animation:up .35s cubic-bezier(.16,1,.3,1) }
+        .card-head { padding:18px 22px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:12px }
+        .card-icon { width:52px; height:52px; border-radius:10px; background:var(--s2); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin-top:2px }
+        .card-meta { flex:1; min-width:0 }
+        .card-title { font-weight:600; font-size:.95rem; line-height:1.3; word-break:break-word }
+        .card-uploader { color:var(--muted); font-size:.78rem; margin-top:2px }
+        .card-sub { color:var(--muted); font-size:.78rem; margin-top:5px; display:flex; align-items:center; gap:6px; flex-wrap:wrap }
+        .audio-badge { display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:100px; font-size:.65rem; font-weight:600; letter-spacing:.3px }
+        .audio-badge.has   { background:rgba(0,230,118,.1);  border:1px solid rgba(0,230,118,.25);  color:var(--green) }
+        .audio-badge.merge { background:rgba(255,140,0,.1);  border:1px solid rgba(255,140,0,.25);  color:var(--orange) }
+        .audio-badge.warn  { background:rgba(255,48,64,.1);  border:1px solid rgba(255,48,64,.25);  color:var(--red) }
 
-        .pill.ig {
-            border-color: rgba(193, 53, 132, .35);
-            color: #e879a0
-        }
-
-        .pill.tt {
-            border-color: rgba(105, 201, 208, .35);
-            color: #69c9d0
-        }
-
-        .hero {
-            text-align: center;
-            padding: 70px 20px 44px;
-            position: relative;
-            overflow: hidden
-        }
-
-        .hero-glow {
-            position: absolute;
-            top: -40px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 700px;
-            height: 360px;
-            background: radial-gradient(ellipse, rgba(255, 48, 64, .11) 0%, transparent 68%);
-            pointer-events: none
-        }
-
-        h1 {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: clamp(3.2rem, 9vw, 7.5rem);
-            line-height: .92;
-            letter-spacing: 1px
-        }
-
-        h1 em {
-            font-style: normal;
-            background: linear-gradient(130deg, var(--red) 0%, var(--orange) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text
-        }
-
-        .hero-sub {
-            color: var(--muted);
-            margin-top: 18px;
-            font-size: .95rem;
-            font-weight: 300;
-            letter-spacing: .3px
-        }
-
-        .wrap {
-            max-width: 760px;
-            margin: 0 auto;
-            padding: 0 20px
-        }
-
-        .url-wrap {
-            background: var(--s1);
-            border: 1px solid var(--border);
-            border-radius: var(--r);
-            overflow: hidden;
-            transition: border-color .2s, box-shadow .2s;
-            display: flex;
-            align-items: center
-        }
-
-        .url-wrap:focus-within {
-            border-color: var(--red);
-            box-shadow: 0 0 0 3px rgba(255, 48, 64, .07)
-        }
-
-        .url-icon {
-            padding: 0 14px;
-            color: var(--muted);
-            font-size: 1.05rem;
-            flex-shrink: 0
-        }
-
-        #url-input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            outline: none;
-            color: var(--text);
-            font-family: 'DM Sans', sans-serif;
-            font-size: .93rem;
-            padding: 17px 0;
-            caret-color: var(--red)
-        }
-
-        #url-input::placeholder {
-            color: var(--muted)
-        }
-
-        .paste-btn {
-            background: transparent;
-            border: none;
-            border-left: 1px solid var(--border);
-            color: var(--muted);
-            padding: 0 15px;
-            cursor: pointer;
-            font-family: 'DM Sans', sans-serif;
-            font-size: .75rem;
-            letter-spacing: .6px;
-            transition: color .15s;
-            flex-shrink: 0;
-            height: 100%;
-            min-height: 54px
-        }
-
-        .paste-btn:hover {
-            color: var(--text)
-        }
-
-        .platform-row {
-            min-height: 28px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 7px;
-            padding-left: 4px
-        }
-
-        .det-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 3px 11px;
-            border-radius: 100px;
-            font-size: .74rem;
-            font-weight: 500;
-            opacity: 0;
-            transform: translateY(-4px);
-            transition: opacity .25s, transform .25s
-        }
-
-        .det-pill.show {
-            opacity: 1;
-            transform: translateY(0)
-        }
-
-        .det-pill.youtube {
-            background: rgba(255, 48, 64, .1);
-            border: 1px solid rgba(255, 48, 64, .3);
-            color: #ff7070
-        }
-
-        .det-pill.instagram {
-            background: rgba(193, 53, 132, .1);
-            border: 1px solid rgba(193, 53, 132, .3);
-            color: #e879a0
-        }
-
-        .det-pill.tiktok {
-            background: rgba(105, 201, 208, .1);
-            border: 1px solid rgba(105, 201, 208, .3);
-            color: #69c9d0
-        }
-
-        .det-pill.twitter {
-            background: rgba(100, 116, 139, .1);
-            border: 1px solid rgba(100, 116, 139, .3);
-            color: #94a3b8
-        }
-
-        #mode-row {
-            display: flex;
-            gap: 6px;
-            margin-top: 10px;
-            opacity: 0;
-            transition: opacity .3s;
-            pointer-events: none
-        }
-
-        #mode-row.show {
-            opacity: 1;
-            pointer-events: auto
-        }
-
-        .mode-btn {
-            flex: 1;
-            padding: 8px;
-            border: 1px solid var(--border);
-            border-radius: var(--r-sm);
-            background: var(--s2);
-            color: var(--muted);
-            font-family: 'DM Sans', sans-serif;
-            font-size: .78rem;
-            cursor: pointer;
-            transition: all .15s
-        }
-
-        .mode-btn.active {
-            border-color: var(--red);
-            background: rgba(255, 48, 64, .08);
-            color: var(--red)
-        }
-
-        #fetch-btn {
-            width: 100%;
-            margin-top: 10px;
-            padding: 15px;
-            background: linear-gradient(130deg, var(--red), var(--orange));
-            color: #fff;
-            border: none;
-            border-radius: var(--r);
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.25rem;
-            letter-spacing: 3.5px;
-            cursor: pointer;
-            transition: opacity .2s, transform .1s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 9px;
-            position: relative;
-            overflow: hidden
-        }
-
-        #fetch-btn::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(rgba(255, 255, 255, .08), transparent)
-        }
-
-        #fetch-btn:hover {
-            opacity: .9
-        }
-
-        #fetch-btn:active {
-            transform: scale(.99)
-        }
-
-        #fetch-btn:disabled {
-            opacity: .45;
-            cursor: not-allowed
-        }
-
-        .srv-bar {
-            text-align: center;
-            padding: 9px;
-            color: var(--muted);
-            font-size: .72rem;
-            margin-top: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px
-        }
-
-        .dot {
-            display: inline-block;
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--muted2)
-        }
-
-        .dot.ok {
-            background: var(--green)
-        }
-
-        .dot.err {
-            background: var(--red)
-        }
-
-        .dot.warn {
-            background: var(--orange)
-        }
-
-        #result-area {
-            max-width: 760px;
-            margin: 28px auto 70px;
-            padding: 0 20px
-        }
-
-        @keyframes up {
-            from {
-                opacity: 0;
-                transform: translateY(16px)
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0)
-            }
-        }
-
-        .card {
-            background: var(--s1);
-            border: 1px solid var(--border);
-            border-radius: var(--r);
-            overflow: hidden;
-            animation: up .35s cubic-bezier(.16, 1, .3, 1)
-        }
-
-        .card-head {
-            padding: 18px 22px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 12px
-        }
-
-        .card-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 10px;
-            background: var(--s2);
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem
-        }
-
-        .card-meta {
-            flex: 1;
-            min-width: 0
-        }
-
-        .card-title {
-            font-weight: 600;
-            font-size: .92rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis
-        }
-
-        .card-sub {
-            color: var(--muted);
-            font-size: .78rem;
-            margin-top: 3px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap
-        }
-
-        .audio-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
-            padding: 2px 8px;
-            border-radius: 100px;
-            font-size: .65rem;
-            font-weight: 600;
-            letter-spacing: .3px
-        }
-
-        .audio-badge.has {
-            background: rgba(0, 230, 118, .1);
-            border: 1px solid rgba(0, 230, 118, .25);
-            color: var(--green)
-        }
-
-        .audio-badge.none {
-            background: rgba(255, 48, 64, .1);
-            border: 1px solid rgba(255, 48, 64, .25);
-            color: var(--red)
-        }
-
-        .audio-badge.merge {
-            background: rgba(255, 140, 0, .1);
-            border: 1px solid rgba(255, 140, 0, .25);
-            color: var(--orange)
-        }
-
-        .card-body {
-            padding: 22px
-        }
-
-        .sec-label {
-            font-size: .7rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--muted);
-            margin-bottom: 9px;
-            font-weight: 500
-        }
+        .card-body { padding:22px }
+        .sec-label { font-size:.7rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin-bottom:9px; font-weight:500 }
 
         /* Quality grid */
-        .q-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 7px;
-            margin-bottom: 18px
-        }
+        .q-grid { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:18px }
+        .q-btn { padding:10px 14px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--s2); color:var(--text); font-family:'DM Sans',sans-serif; cursor:pointer; transition:all .13s; text-align:center; min-width:88px; position:relative }
+        .q-btn:hover { border-color:var(--red); color:var(--red) }
+        .q-btn.sel { border-color:var(--red); background:rgba(255,48,64,.09); color:var(--red) }
+        .q-label { display:block; font-size:.88rem; font-weight:700; line-height:1.2 }
+        .q-note  { display:block; font-size:.62rem; color:var(--muted); margin-top:2px }
+        .q-size  { display:block; font-size:.67rem; color:var(--blue); margin-top:2px; font-weight:600 }
+        .q-btn.sel .q-note { color:rgba(255,48,64,.5) }
+        .q-btn.sel .q-size { color:rgba(79,195,247,.85) }
 
-        .q-btn {
-            padding: 9px 16px;
-            border: 1px solid var(--border);
-            border-radius: var(--r-sm);
-            background: var(--s2);
-            color: var(--text);
-            font-family: 'DM Sans', sans-serif;
-            font-size: .83rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all .13s;
-            text-align: center;
-            min-width: 80px
-        }
+        .info-box { padding:11px 14px; border-radius:var(--r-sm); font-size:.82rem; display:flex; gap:9px; margin-bottom:16px; align-items:flex-start; line-height:1.45 }
+        .info-box.green  { background:rgba(0,230,118,.06);  border:1px solid rgba(0,230,118,.18);  color:rgba(0,230,118,.9) }
+        .info-box.orange { background:rgba(255,140,0,.06);  border:1px solid rgba(255,140,0,.18);  color:rgba(255,140,0,.9) }
+        .info-box.red    { background:rgba(255,48,64,.06);  border:1px solid rgba(255,48,64,.18);  color:rgba(255,80,80,.9) }
+        .info-ico { flex-shrink:0; margin-top:1px }
 
-        .q-btn:hover {
-            border-color: var(--red);
-            color: var(--red)
-        }
+        .dl-btn { width:100%; padding:14px; background:linear-gradient(130deg,var(--red),var(--orange)); color:#fff; border:none; border-radius:var(--r-sm); font-family:'Bebas Neue',sans-serif; font-size:1.1rem; letter-spacing:3px; cursor:pointer; transition:opacity .2s; display:flex; align-items:center; justify-content:center; gap:8px }
+        .dl-btn:hover { opacity:.88 }
+        .dl-btn:disabled { opacity:.4; cursor:not-allowed; pointer-events:none }
 
-        .q-btn.sel {
-            border-color: var(--red);
-            background: rgba(255, 48, 64, .09);
-            color: var(--red)
-        }
+        /* expiry warning */
+        .expiry-warn { font-size:.75rem; color:var(--muted); text-align:center; margin-top:8px; padding:6px; }
+        .expiry-warn strong { color:var(--orange) }
 
-        .q-btn .q-label {
-            display: block;
-            font-size: .85rem;
-            font-weight: 600
-        }
+        /* img picker */
+        .img-controls { display:flex; gap:7px; align-items:center; margin-bottom:11px }
+        .ctrl-btn { padding:5px 13px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--s2); color:var(--muted); font-family:'DM Sans',sans-serif; font-size:.77rem; cursor:pointer; transition:all .13s }
+        .ctrl-btn:hover { color:var(--text); border-color:#444 }
+        .sel-count { margin-left:auto; font-size:.78rem; color:var(--muted) }
+        .img-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; margin-bottom:18px }
+        .img-item { border-radius:9px; overflow:hidden; border:2px solid var(--border); cursor:pointer; position:relative; transition:border-color .15s; aspect-ratio:1; background:var(--s2) }
+        .img-item img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .2s }
+        .img-item:hover img { transform:scale(1.03) }
+        .img-item.sel { border-color:var(--red) }
+        .img-check { position:absolute; top:7px; right:7px; width:21px; height:21px; border-radius:50%; background:rgba(0,0,0,.55); border:2px solid rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-size:.6rem; color:#fff; transition:all .15s }
+        .img-item.sel .img-check { background:var(--red); border-color:var(--red) }
+        .img-num  { position:absolute; bottom:5px; left:7px; font-size:.67rem; background:rgba(0,0,0,.55); padding:2px 6px; border-radius:4px; color:#fff }
+        .img-type { position:absolute; top:7px; left:7px; font-size:.65rem; background:rgba(0,0,0,.55); padding:2px 6px; border-radius:4px; color:#fff }
 
-        .q-btn .q-note {
-            display: block;
-            font-size: .62rem;
-            color: var(--muted);
-            margin-top: 2px;
-            font-weight: 400
-        }
+        .spin { display:inline-block; width:17px; height:17px; border:2px solid rgba(255,255,255,.25); border-top-color:#fff; border-radius:50%; animation:rot .65s linear infinite }
+        @keyframes rot { to{transform:rotate(360deg)} }
+        .spin-dark { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.2); border-top-color:var(--orange); border-radius:50%; animation:rot .65s linear infinite }
 
-        .q-btn .q-size {
-            display: block;
-            font-size: .65rem;
-            color: var(--blue);
-            margin-top: 1px;
-            font-weight: 500
-        }
+        .alert { padding:14px 17px; border-radius:var(--r); font-size:.87rem; display:flex; align-items:flex-start; gap:10px; animation:up .25s ease; line-height:1.5 }
+        .alert.err  { background:rgba(255,48,64,.07);  border:1px solid rgba(255,48,64,.22);  color:#ff8888 }
+        .alert.warn { background:rgba(255,140,0,.07);  border:1px solid rgba(255,140,0,.22);  color:#ffaa44 }
+        .alert.ok   { background:rgba(0,230,118,.07);  border:1px solid rgba(0,230,118,.22);  color:var(--green) }
+        .alert-ico { font-size:.95rem; flex-shrink:0; margin-top:2px }
 
-        .q-btn.sel .q-note {
-            color: rgba(255, 48, 64, .55)
-        }
+        .steps { max-width:760px; margin:0 auto 70px; padding:0 20px }
+        .steps-inner { background:var(--s1); border:1px solid var(--border); border-radius:var(--r); padding:22px 26px }
+        .steps-inner h3 { font-size:.7rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin-bottom:14px }
+        .step { display:flex; gap:12px; align-items:flex-start; margin-bottom:10px }
+        .step:last-child { margin-bottom:0 }
+        .step-n { width:22px; height:22px; border-radius:50%; background:rgba(255,48,64,.12); border:1px solid rgba(255,48,64,.3); color:var(--red); font-size:.72rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px }
+        .step p { color:var(--muted); font-size:.84rem; line-height:1.5 }
+        .step p strong { color:var(--text) }
 
-        .q-btn.sel .q-size {
-            color: rgba(79, 195, 247, .8)
-        }
-
-        /* Probe loading state */
-        .probe-loading {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 16px;
-            background: var(--s2);
-            border-radius: var(--r-sm);
-            margin-bottom: 18px;
-            color: var(--muted);
-            font-size: .85rem
-        }
-
-        .probe-loading .spin {
-            flex-shrink: 0
-        }
-
-        .info-box {
-            padding: 11px 14px;
-            border-radius: var(--r-sm);
-            font-size: .82rem;
-            display: flex;
-            gap: 9px;
-            margin-bottom: 16px;
-            align-items: flex-start;
-            line-height: 1.45
-        }
-
-        .info-box.green {
-            background: rgba(0, 230, 118, .06);
-            border: 1px solid rgba(0, 230, 118, .18);
-            color: rgba(0, 230, 118, .9)
-        }
-
-        .info-box.orange {
-            background: rgba(255, 140, 0, .06);
-            border: 1px solid rgba(255, 140, 0, .18);
-            color: rgba(255, 140, 0, .9)
-        }
-
-        .info-box.red {
-            background: rgba(255, 48, 64, .06);
-            border: 1px solid rgba(255, 48, 64, .18);
-            color: rgba(255, 80, 80, .9)
-        }
-
-        .info-ico {
-            flex-shrink: 0;
-            margin-top: 1px
-        }
-
-        .dl-btn {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(130deg, var(--red), var(--orange));
-            color: #fff;
-            border: none;
-            border-radius: var(--r-sm);
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.1rem;
-            letter-spacing: 3px;
-            cursor: pointer;
-            transition: opacity .2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            text-decoration: none
-        }
-
-        .dl-btn:hover {
-            opacity: .88
-        }
-
-        .dl-btn:disabled {
-            opacity: .4;
-            cursor: not-allowed;
-            pointer-events: none
-        }
-
-        .img-controls {
-            display: flex;
-            gap: 7px;
-            align-items: center;
-            margin-bottom: 11px
-        }
-
-        .ctrl-btn {
-            padding: 5px 13px;
-            border: 1px solid var(--border);
-            border-radius: var(--r-sm);
-            background: var(--s2);
-            color: var(--muted);
-            font-family: 'DM Sans', sans-serif;
-            font-size: .77rem;
-            cursor: pointer;
-            transition: all .13s
-        }
-
-        .ctrl-btn:hover {
-            color: var(--text);
-            border-color: #444
-        }
-
-        .sel-count {
-            margin-left: auto;
-            font-size: .78rem;
-            color: var(--muted)
-        }
-
-        .img-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 10px;
-            margin-bottom: 18px
-        }
-
-        .img-item {
-            border-radius: 9px;
-            overflow: hidden;
-            border: 2px solid var(--border);
-            cursor: pointer;
-            position: relative;
-            transition: border-color .15s;
-            aspect-ratio: 1;
-            background: var(--s2)
-        }
-
-        .img-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            transition: transform .2s
-        }
-
-        .img-item:hover img {
-            transform: scale(1.03)
-        }
-
-        .img-item.sel {
-            border-color: var(--red)
-        }
-
-        .img-check {
-            position: absolute;
-            top: 7px;
-            right: 7px;
-            width: 21px;
-            height: 21px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, .55);
-            border: 2px solid rgba(255, 255, 255, .25);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: .6rem;
-            color: #fff;
-            transition: all .15s
-        }
-
-        .img-item.sel .img-check {
-            background: var(--red);
-            border-color: var(--red)
-        }
-
-        .img-num {
-            position: absolute;
-            bottom: 5px;
-            left: 7px;
-            font-size: .67rem;
-            background: rgba(0, 0, 0, .55);
-            padding: 2px 6px;
-            border-radius: 4px;
-            color: #fff
-        }
-
-        .img-type {
-            position: absolute;
-            top: 7px;
-            left: 7px;
-            font-size: .65rem;
-            background: rgba(0, 0, 0, .55);
-            padding: 2px 6px;
-            border-radius: 4px;
-            color: #fff
-        }
-
-        .spin {
-            display: inline-block;
-            width: 17px;
-            height: 17px;
-            border: 2px solid rgba(255, 255, 255, .25);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: rot .65s linear infinite
-        }
-
-        @keyframes rot {
-            to {
-                transform: rotate(360deg)
-            }
-        }
-
-        .alert {
-            padding: 14px 17px;
-            border-radius: var(--r);
-            font-size: .87rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            animation: up .25s ease
-        }
-
-        .alert.err {
-            background: rgba(255, 48, 64, .07);
-            border: 1px solid rgba(255, 48, 64, .22);
-            color: #ff8888
-        }
-
-        .alert.warn {
-            background: rgba(255, 140, 0, .07);
-            border: 1px solid rgba(255, 140, 0, .22);
-            color: #ffaa44
-        }
-
-        .alert.ok {
-            background: rgba(0, 230, 118, .07);
-            border: 1px solid rgba(0, 230, 118, .22);
-            color: var(--green)
-        }
-
-        .alert-ico {
-            font-size: .95rem;
-            flex-shrink: 0;
-            margin-top: 1px
-        }
-
-        .steps {
-            max-width: 760px;
-            margin: 0 auto 70px;
-            padding: 0 20px
-        }
-
-        .steps-inner {
-            background: var(--s1);
-            border: 1px solid var(--border);
-            border-radius: var(--r);
-            padding: 22px 26px
-        }
-
-        .steps-inner h3 {
-            font-size: .7rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--muted);
-            margin-bottom: 14px
-        }
-
-        .step {
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-            margin-bottom: 10px
-        }
-
-        .step:last-child {
-            margin-bottom: 0
-        }
-
-        .step-n {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background: rgba(255, 48, 64, .12);
-            border: 1px solid rgba(255, 48, 64, .3);
-            color: var(--red);
-            font-size: .72rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            margin-top: 1px
-        }
-
-        .step p {
-            color: var(--muted);
-            font-size: .84rem;
-            line-height: 1.5
-        }
-
-        .step p strong {
-            color: var(--text)
-        }
-
-        @media(max-width:580px) {
-            header {
-                padding: 14px 18px
-            }
-
-            .pills {
-                display: none
-            }
-
-            .hero {
-                padding: 44px 20px 30px
-            }
-
-            .img-grid {
-                grid-template-columns: repeat(2, 1fr)
-            }
-
-            #mode-row {
-                flex-direction: column
-            }
-        }
+        @media(max-width:580px) { header{padding:14px 18px} .pills{display:none} .hero{padding:44px 20px 30px} .img-grid{grid-template-columns:repeat(2,1fr)} #mode-row{flex-direction:column} }
     </style>
 </head>
-
 <body>
 
-    <header>
-        <div>
-            <div class="logo">GRABR</div>
-            <span class="logo-sub">MEDIA DOWNLOADER</span>
-        </div>
-        <div class="pills">
-            <div class="pill yt">▶ YouTube</div>
-            <div class="pill ig">◈ Instagram</div>
-            <div class="pill tt">♪ TikTok</div>
-        </div>
-    </header>
-
-    <section class="hero">
-        <div class="hero-glow"></div>
-        <h1>GRAB ANY<br /><em>MEDIA.</em></h1>
-        <p class="hero-sub">Paste a link — see real available qualities + sizes — download with audio.</p>
-    </section>
-
-    <div class="wrap" style="margin-bottom:18px">
-        <div class="url-wrap">
-            <div class="url-icon">🔗</div>
-            <input type="text" id="url-input" placeholder="Paste YouTube, Instagram, or TikTok URL…" autocomplete="off"
-                spellcheck="false" />
-            <button class="paste-btn" onclick="doPaste()">PASTE</button>
-        </div>
-        <div class="platform-row">
-            <div id="det-pill" class="det-pill"></div>
-        </div>
-        <div id="mode-row">
-            <button class="mode-btn active" id="mode-video" onclick="setMode('video')">🎬 Video + Audio</button>
-            <button class="mode-btn" id="mode-audio" onclick="setMode('audio')">🎵 Audio Only (MP3)</button>
-        </div>
-        <button id="fetch-btn" onclick="doFetch()">⬇ GRAB IT</button>
-        <div class="srv-bar">
-            <span class="dot" id="srv-dot"></span>
-            <span id="srv-txt">Checking backend…</span>
-        </div>
+<header>
+    <div>
+        <div class="logo">GRABR</div>
+        <span class="logo-sub">MEDIA DOWNLOADER</span>
     </div>
+    <div class="pills">
+        <div class="pill yt">▶ YouTube</div>
+        <div class="pill ig">◈ Instagram</div>
+        <div class="pill tt">♪ TikTok</div>
+    </div>
+</header>
 
-    <section id="result-area"></section>
+<section class="hero">
+    <div class="hero-glow"></div>
+    <h1>GRAB ANY<br /><em>MEDIA.</em></h1>
+    <p class="hero-sub">Real title · Real available qualities · Real file sizes · No fake data.</p>
+</section>
 
-    <section class="steps">
-        <div class="steps-inner">
-            <h3>How Quality Detection Works</h3>
-            <div class="step">
-                <div class="step-n">🔍</div>
-                <p><strong>Real-time probing</strong> — GRABR queries the server for each quality to check if it
-                    actually exists for this video. Only available qualities are shown.</p>
-            </div>
-            <div class="step">
-                <div class="step-n">📐</div>
-                <p><strong>Size estimates</strong> — File sizes are fetched from the CDN headers before you download, so
-                    you know exactly what you're getting.</p>
-            </div>
-            <div class="step">
-                <div class="step-n">🔀</div>
-                <p><strong>YouTube 720p+</strong> — YouTube separates video and audio streams. FFmpeg on the server
-                    merges them into one file with full audio.</p>
-            </div>
-            <div class="step">
-                <div class="step-n">🎵</div>
-                <p>Switch to <strong>Audio Only</strong> to download just the MP3 from any video.</p>
-            </div>
-        </div>
-    </section>
+<div class="wrap" style="margin-bottom:18px">
+    <div class="url-wrap">
+        <div class="url-icon">🔗</div>
+        <input type="text" id="url-input" placeholder="Paste YouTube, Instagram, or TikTok URL…" autocomplete="off" spellcheck="false" />
+        <button class="paste-btn" onclick="doPaste()">PASTE</button>
+    </div>
+    <div class="platform-row">
+        <div id="det-pill" class="det-pill"></div>
+    </div>
+    <div id="mode-row">
+        <button class="mode-btn active" id="mode-video" onclick="setMode('video')">🎬 Video + Audio</button>
+        <button class="mode-btn" id="mode-audio" onclick="setMode('audio')">🎵 Audio Only (MP3)</button>
+    </div>
+    <button id="fetch-btn" onclick="doFetch()">⬇ GRAB IT</button>
+    <div class="srv-bar">
+        <span class="dot" id="srv-dot"></span>
+        <span id="srv-txt">Checking backend…</span>
+    </div>
+</div>
 
-    <script>
-        // ── CONFIG ────────────────────────────────────────────────────────────────────
-        const REMOTE_BACKEND = 'https://grabr.onrender.com';
-        const BACKEND = (() => {
-            const h = window.location.hostname;
-            if (h === 'localhost' || h === '127.0.0.1' || h.endsWith('.app.github.dev')) return window.location.origin;
-            return REMOTE_BACKEND;
-        })();
+<section id="result-area"></section>
 
-        let currentMode = 'video';
-        let serverHasFFmpeg = false;
+<section class="steps">
+    <div class="steps-inner">
+        <h3>How It Works</h3>
+        <div class="step"><div class="step-n">🔍</div><p><strong>yt-dlp on the server</strong> reads the real available qualities directly from YouTube/source — only qualities that actually exist for this specific video are shown.</p></div>
+        <div class="step"><div class="step-n">📐</div><p><strong>Accurate file sizes</strong> — sizes come from the CDN manifest, not guesses. If size shows as "—" the CDN didn't report it.</p></div>
+        <div class="step"><div class="step-n">🔀</div><p><strong>YouTube 720p+</strong> needs FFmpeg merge. The server downloads video and audio separately and merges them. <strong>Download starts after merge completes</strong> — this may take 30–90 seconds for long videos.</p></div>
+        <div class="step"><div class="step-n">⚠</div><p><strong>If download is 0 bytes</strong>: the CDN URL expired (they last ~6 minutes). Click <strong>GRAB IT</strong> again to get fresh URLs, then download immediately.</p></div>
+    </div>
+</section>
 
-        // ── SERVER CHECK ──────────────────────────────────────────────────────────────
-        async function checkServer() {
-            const dot = document.getElementById('srv-dot');
-            const txt = document.getElementById('srv-txt');
-            try {
-                const ctrl = new AbortController();
-                const tid = setTimeout(() => ctrl.abort(), 5000);
-                const r = await fetch(BACKEND + '/api/health', { signal: ctrl.signal });
-                clearTimeout(tid);
-                if (!r.ok) throw new Error('HTTP ' + r.status);
-                const d = await r.json();
-                serverHasFFmpeg = !!d.ffmpeg;
-                dot.className = 'dot ok';
-                txt.innerHTML = `Backend connected &nbsp;·&nbsp; FFmpeg: ${d.ffmpeg
-                    ? '<span style="color:var(--green)">✓ YouTube audio merging enabled</span>'
-                    : '<span style="color:var(--orange)">✗ install FFmpeg for YouTube 720p+ audio</span>'}`;
-            } catch (e) {
-                dot.className = 'dot err';
-                txt.innerHTML = 'Backend offline — <strong>start the server:</strong> <code>node server/index.js</code>';
-            }
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const REMOTE_BACKEND = 'https://grabr.onrender.com';
+const BACKEND = (() => {
+    const h = window.location.hostname;
+    if (h === 'localhost' || h === '127.0.0.1' || h.endsWith('.app.github.dev')) return window.location.origin;
+    return REMOTE_BACKEND;
+})();
+
+let currentMode = 'video';
+let serverHasFFmpeg = false;
+let serverHasYtdlp  = false;
+
+// State for current video (so we can re-fetch on expiry)
+let currentState = { url: null, qualities: [], platform: null, title: '' };
+
+// ── SERVER CHECK ──────────────────────────────────────────────────────────────
+async function checkServer() {
+    const dot = document.getElementById('srv-dot');
+    const txt = document.getElementById('srv-txt');
+    try {
+        const ctrl = new AbortController();
+        setTimeout(() => ctrl.abort(), 5000);
+        const r = await fetch(BACKEND + '/api/health', { signal: ctrl.signal });
+        if (!r.ok) throw new Error();
+        const d = await r.json();
+        serverHasFFmpeg = !!d.ffmpeg;
+        serverHasYtdlp  = !!d.ytdlp;
+        dot.className = 'dot ok';
+        const parts = [];
+        if (d.ytdlp)  parts.push('<span style="color:var(--green)">✓ yt-dlp</span>');
+        else          parts.push('<span style="color:var(--orange)">✗ yt-dlp missing (install for accurate qualities)</span>');
+        if (d.ffmpeg) parts.push('<span style="color:var(--green)">✓ FFmpeg</span>');
+        else          parts.push('<span style="color:var(--orange)">✗ FFmpeg missing (no audio merge)</span>');
+        txt.innerHTML = 'Backend connected &nbsp;·&nbsp; ' + parts.join(' &nbsp;·&nbsp; ');
+    } catch {
+        dot.className = 'dot err';
+        txt.innerHTML = 'Backend offline — start: <code>node server/index.js</code>';
+    }
+}
+
+// ── PLATFORM DETECTION ────────────────────────────────────────────────────────
+function detectPlatform(u) {
+    if (!u) return null;
+    const l = u.toLowerCase();
+    if (l.includes('youtu.be') || l.includes('youtube.com')) return 'youtube';
+    if (l.includes('instagram.com')) return 'instagram';
+    if (l.includes('tiktok.com')) return 'tiktok';
+    if (l.includes('twitter.com') || l.includes('x.com')) return 'twitter';
+    return null;
+}
+
+const PL = {
+    youtube:   { label:'▶ YouTube / Shorts', cls:'youtube',   icon:'▶' },
+    instagram: { label:'◈ Instagram',         cls:'instagram', icon:'◈' },
+    tiktok:    { label:'♪ TikTok',            cls:'tiktok',   icon:'♪' },
+    twitter:   { label:'𝕏 Twitter / X',       cls:'twitter',  icon:'𝕏' },
+};
+
+const inp = document.getElementById('url-input');
+const pill = document.getElementById('det-pill');
+const modeRow = document.getElementById('mode-row');
+
+inp.addEventListener('input', () => {
+    const p = detectPlatform(inp.value.trim());
+    if (p) { pill.textContent = PL[p].label; pill.className = `det-pill show ${PL[p].cls}`; modeRow.className = 'show'; }
+    else   { pill.className = 'det-pill'; modeRow.className = ''; }
+});
+
+function setMode(m) {
+    currentMode = m;
+    document.getElementById('mode-video').className = 'mode-btn' + (m==='video' ? ' active' : '');
+    document.getElementById('mode-audio').className = 'mode-btn' + (m==='audio' ? ' active' : '');
+}
+
+async function doPaste() {
+    try { const t = await navigator.clipboard.readText(); inp.value = t; inp.dispatchEvent(new Event('input')); }
+    catch { inp.focus(); }
+}
+
+// ── MAIN FETCH FLOW ───────────────────────────────────────────────────────────
+async function doFetch() {
+    const rawUrl = inp.value.trim();
+    if (!rawUrl) return showAlert('err', 'Please paste a link first.');
+    const platform = detectPlatform(rawUrl);
+    if (!platform) return showAlert('err', 'Unsupported link. Try YouTube, Instagram, or TikTok.');
+
+    const btn = document.getElementById('fetch-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span> DETECTING QUALITIES…';
+    document.getElementById('result-area').innerHTML = '';
+
+    try {
+        // Step 1: Get real info (title + quality list) via yt-dlp on server
+        const info = await apiPost('/api/info', { url: rawUrl }, 45000);
+
+        if (info.picker && Array.isArray(info.picker)) {
+            return renderPicker(info, platform);
         }
 
-        // ── PLATFORM DETECTION ────────────────────────────────────────────────────────
-        function detectPlatform(u) {
-            if (!u) return null;
-            const l = u.toLowerCase();
-            if (l.includes('youtu.be') || l.includes('youtube.com')) return 'youtube';
-            if (l.includes('instagram.com')) return 'instagram';
-            if (l.includes('tiktok.com')) return 'tiktok';
-            if (l.includes('twitter.com') || l.includes('x.com')) return 'twitter';
-            return null;
+        if (currentMode === 'audio') {
+            // For audio: just fetch directly
+            const fetchData = await apiPost('/api/fetch', { url: rawUrl, quality: 'max', audioOnly: true }, 30000);
+            return renderAudio(fetchData, info, platform);
         }
 
-        const PL = {
-            youtube: { label: '▶ YouTube / Shorts', cls: 'youtube', icon: '▶' },
-            instagram: { label: '◈ Instagram', cls: 'instagram', icon: '◈' },
-            tiktok: { label: '♪ TikTok', cls: 'tiktok', icon: '♪' },
-            twitter: { label: '𝕏 Twitter / X', cls: 'twitter', icon: '𝕏' },
-        };
+        // Store state for re-fetch on expiry
+        currentState = { url: rawUrl, qualities: info.qualities || [], platform, title: info.title || 'video' };
+        renderVideoCard(info, platform);
 
-        const inp = document.getElementById('url-input');
-        const pill = document.getElementById('det-pill');
-        const modeRow = document.getElementById('mode-row');
+    } catch (e) {
+        showAlert('err', e.message || 'Could not fetch. Make sure the link is public and try again.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '⬇ GRAB IT';
+    }
+}
 
-        inp.addEventListener('input', () => {
-            const p = detectPlatform(inp.value.trim());
-            if (p) {
-                pill.textContent = PL[p].label;
-                pill.className = `det-pill show ${PL[p].cls}`;
-                modeRow.className = 'show';
-            } else {
-                pill.className = 'det-pill';
-                modeRow.className = '';
-            }
+async function apiPost(endpoint, body, timeout = 30000) {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), timeout);
+    try {
+        const r = await fetch(BACKEND + endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: ctrl.signal,
         });
+        clearTimeout(tid);
+        const d = await r.json();
+        if (d.error) throw new Error(d.error);
+        return d;
+    } catch (e) {
+        clearTimeout(tid);
+        if (e.name === 'AbortError') throw new Error('Request timed out. Try again.');
+        if (e.message?.includes('Failed to fetch') || e.message?.includes('NetworkError'))
+            throw new Error('Cannot reach backend server. Start it: node server/index.js');
+        throw e;
+    }
+}
 
-        function setMode(m) {
-            currentMode = m;
-            document.getElementById('mode-video').className = 'mode-btn' + (m === 'video' ? ' active' : '');
-            document.getElementById('mode-audio').className = 'mode-btn' + (m === 'audio' ? ' active' : '');
-        }
+// ── FORMAT HELPERS ────────────────────────────────────────────────────────────
+function fmtSize(bytes) {
+    if (!bytes || bytes < 1024) return null;
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(0)+' KB';
+    return (bytes/1024/1024).toFixed(1)+' MB';
+}
 
-        async function doPaste() {
-            try {
-                const t = await navigator.clipboard.readText();
-                inp.value = t;
-                inp.dispatchEvent(new Event('input'));
-            } catch { inp.focus(); }
-        }
+function fmtDuration(secs) {
+    if (!secs) return '';
+    const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
+    if (h) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    return `${m}:${String(s).padStart(2,'0')}`;
+}
 
-        // ── FETCH FLOW ────────────────────────────────────────────────────────────────
-        async function doFetch() {
-            const rawUrl = inp.value.trim();
-            if (!rawUrl) return showAlert('err', 'Please paste a link first.');
-            const platform = detectPlatform(rawUrl);
-            if (!platform) return showAlert('err', 'Unsupported link. Try YouTube, Instagram, or TikTok.');
+function sanitize(s) {
+    return String(s||'').replace(/[^a-zA-Z0-9._\- ]/g,'_').slice(0,100);
+}
 
-            const btn = document.getElementById('fetch-btn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spin"></span> PROBING QUALITIES…';
-            document.getElementById('result-area').innerHTML = '';
+// ── RENDER VIDEO CARD ─────────────────────────────────────────────────────────
+function renderVideoCard(info, platform) {
+    const pl = PL[platform] || PL.youtube;
+    const qualities = info.qualities || [];
+    const area = document.getElementById('result-area');
+    const dur = fmtDuration(info.duration);
 
-            try {
-                if (currentMode === 'audio') {
-                    // For audio mode, just do a single fetch
-                    const data = await callFetch(rawUrl, 'max', true);
-                    renderAudio(data, platform, rawUrl);
-                } else {
-                    // Probe all available qualities
-                    const result = await callProbe(rawUrl);
-                    renderResult(result, platform, rawUrl);
-                }
-            } catch (e) {
-                showAlert('err', e.message || 'Could not fetch. Make sure the link is public and try again.');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '⬇ GRAB IT';
-            }
-        }
-
-        /** Call /api/probe to get all available qualities with sizes */
-        async function callProbe(mediaUrl) {
-            const ctrl = new AbortController();
-            const tid = setTimeout(() => ctrl.abort(), 90000); // probing takes time
-            try {
-                const r = await fetch(BACKEND + '/api/probe', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: mediaUrl }),
-                    signal: ctrl.signal,
-                });
-                clearTimeout(tid);
-                const d = await r.json();
-                if (d.error) throw new Error(d.error);
-                return d;
-            } catch (e) {
-                clearTimeout(tid);
-                if (e.name === 'AbortError') throw new Error('Quality detection timed out. Try again.');
-                if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))
-                    throw new Error('Cannot reach backend server. Start it with: node server/index.js');
-                throw e;
-            }
-        }
-
-        /** Call /api/fetch for a specific quality */
-        async function callFetch(mediaUrl, quality = 'max', audioOnly = false) {
-            const ctrl = new AbortController();
-            const tid = setTimeout(() => ctrl.abort(), 30000);
-            try {
-                const r = await fetch(BACKEND + '/api/fetch', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: mediaUrl, quality, audioOnly }),
-                    signal: ctrl.signal,
-                });
-                clearTimeout(tid);
-                const d = await r.json();
-                if (d.error) throw new Error(d.error);
-                return d;
-            } catch (e) {
-                clearTimeout(tid);
-                if (e.name === 'AbortError') throw new Error('Request timed out.');
-                throw e;
-            }
-        }
-
-        // ── FORMAT HELPERS ────────────────────────────────────────────────────────────
-        function fmtSize(bytes) {
-            if (!bytes || bytes === 0) return null;
-            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
-            return (bytes / 1024 / 1024).toFixed(1) + ' MB';
-        }
-
-        // ── RENDER ────────────────────────────────────────────────────────────────────
-        function renderResult(probeResult, platform, origUrl) {
-            const { qualities, ffmpeg } = probeResult;
-
-            if (!qualities || qualities.length === 0) {
-                return showAlert('err', 'No downloadable qualities found for this URL.');
-            }
-
-            // Check if it's a picker (Instagram multi-image)
-            const first = qualities[0];
-            if (first.picker && Array.isArray(first.picker)) {
-                return renderPicker({ picker: first.picker }, platform);
-            }
-
-            // Single video render
-            const pl = PL[platform] || PL.youtube;
-            const area = document.getElementById('result-area');
-
-            // Default select first (best) quality
-            let selectedIdx = 0;
-            const sel = qualities[selectedIdx];
-
-            const audioBadge = sel.needsMerge
-                ? '<span class="audio-badge merge">🔀 Server merges audio</span>'
-                : '<span class="audio-badge has">🔊 Audio included</span>';
-
-            area.innerHTML = `
+    area.innerHTML = `
 <div class="card">
     <div class="card-head">
         <div class="card-icon">${esc(pl.icon)}</div>
         <div class="card-meta">
-            <div class="card-title">Ready to download</div>
-            <div class="card-sub">${esc(pl.label)} &nbsp;·&nbsp; <span id="badge-wrap">${audioBadge}</span></div>
+            <div class="card-title">${esc(info.title || 'Video')}</div>
+            ${info.uploader ? `<div class="card-uploader">${esc(info.uploader)}</div>` : ''}
+            <div class="card-sub">
+                ${esc(pl.label)}
+                ${dur ? `&nbsp;·&nbsp; ${esc(dur)}` : ''}
+                &nbsp;·&nbsp; <span id="main-badge"></span>
+            </div>
         </div>
     </div>
     <div class="card-body">
-        <div id="audio-info">${buildAudioInfo(sel, ffmpeg)}</div>
-        <div class="sec-label">Available Qualities (${qualities.length} found)</div>
+        <div id="audio-info"></div>
+        <div class="sec-label">${qualities.length} Available Qualit${qualities.length===1?'y':'ies'}</div>
         <div class="q-grid" id="q-grid"></div>
-        <button class="dl-btn" id="main-dl">⬇ DOWNLOAD</button>
+        <button class="dl-btn" id="main-dl" disabled>⬇ SELECT A QUALITY</button>
+        <div class="expiry-warn">⏱ CDN URLs expire in ~6 min. If you get a 0-byte file, click <strong>GRAB IT</strong> again and download immediately.</div>
     </div>
 </div>`;
 
-            buildQGrid(qualities, platform, ffmpeg);
-            // Select first by default
-            selectQuality(0, qualities, platform, ffmpeg);
-        }
+    buildQGrid(qualities, platform, info);
+    // Auto-select first quality
+    if (qualities.length > 0) selectQuality(0, qualities, platform, info);
+}
 
-        function buildQGrid(qualities, platform, ffmpeg) {
-            const grid = document.getElementById('q-grid');
-            if (!grid) return;
-            grid.innerHTML = '';
-
-            qualities.forEach((q, i) => {
-                const btn = document.createElement('button');
-                btn.className = 'q-btn';
-                btn.dataset.idx = i;
-
-                const sizeStr = fmtSize(q.size);
-                const noteStr = q.needsMerge ? (ffmpeg ? '🔀 merged' : '⚠ no FFmpeg') : '🔊 audio';
-
-                btn.innerHTML = `
+function buildQGrid(qualities, platform, info) {
+    const grid = document.getElementById('q-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    qualities.forEach((q, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'q-btn';
+        btn.dataset.idx = i;
+        const sizeStr = fmtSize(q.size);
+        const needsMergeOk = q.needsMerge && serverHasFFmpeg;
+        const needsMergeNo = q.needsMerge && !serverHasFFmpeg;
+        const noteStr = needsMergeNo ? '⚠ no FFmpeg' : q.needsMerge ? '🔀 merge' : '🔊 audio';
+        btn.innerHTML = `
             <span class="q-label">${q.label === 'Best' ? '🏆 Best' : q.label}</span>
             <span class="q-note">${noteStr}</span>
-            ${sizeStr ? `<span class="q-size">${sizeStr}</span>` : ''}
-        `;
-                btn.onclick = () => selectQuality(i, qualities, platform, ffmpeg);
-                grid.appendChild(btn);
-            });
+            ${sizeStr ? `<span class="q-size">~${sizeStr}</span>` : '<span class="q-size">—</span>'}`;
+        btn.onclick = () => selectQuality(i, qualities, platform, info);
+        grid.appendChild(btn);
+    });
+}
+
+function selectQuality(idx, qualities, platform, info) {
+    document.querySelectorAll('#q-grid .q-btn').forEach((b,i) => b.className = 'q-btn'+(i===idx?' sel':''));
+    const q = qualities[idx];
+
+    // Update badge
+    const badge = document.getElementById('main-badge');
+    if (badge) {
+        if (q.needsMerge && serverHasFFmpeg)
+            badge.innerHTML = '<span class="audio-badge merge">🔀 Server merges audio</span>';
+        else if (q.needsMerge && !serverHasFFmpeg)
+            badge.innerHTML = '<span class="audio-badge warn">⚠ FFmpeg missing</span>';
+        else
+            badge.innerHTML = '<span class="audio-badge has">🔊 Audio included</span>';
+    }
+
+    // Update info box
+    const aInfo = document.getElementById('audio-info');
+    if (aInfo) aInfo.innerHTML = buildAudioInfo(q);
+
+    // Update download button
+    const dlBtn = document.getElementById('main-dl');
+    if (!dlBtn) return;
+    dlBtn.disabled = false;
+
+    const label = q.label === 'Best' ? 'BEST' : q.label.toUpperCase();
+    const sizeStr = fmtSize(q.size);
+    dlBtn.innerHTML = `⬇ DOWNLOAD ${label}${sizeStr ? ' · ~'+sizeStr : ''}`;
+
+    const filename = sanitize(info.title || 'video') + `_${q.quality || 'best'}.mp4`;
+
+    if (q.needsMerge && serverHasFFmpeg) {
+        // Must fetch fresh Cobalt URLs at download time (not at probe time)
+        // to avoid expiry. Fetch + merge happens on click.
+        dlBtn.onclick = () => startMergeFlow(currentState.url, q.quality, filename, dlBtn);
+    } else if (!q.needsMerge) {
+        // Direct stream — also fetch fresh URL on click
+        dlBtn.onclick = () => startDirectFlow(currentState.url, q.quality, filename, dlBtn);
+    } else {
+        // needsMerge but no FFmpeg
+        dlBtn.disabled = true;
+        dlBtn.innerHTML = '✗ Install FFmpeg on server for this quality';
+    }
+}
+
+function buildAudioInfo(q) {
+    if (!q.needsMerge) return '<div class="info-box green"><span class="info-ico">✓</span><span>Audio already embedded in this format — downloads as a single file.</span></div>';
+    if (serverHasFFmpeg) return '<div class="info-box orange"><span class="info-ico">🔀</span><span>YouTube serves video and audio separately for this quality. The server fetches both and merges them with FFmpeg. <strong>Download will start after merge completes</strong> (~30–90s for long videos).</span></div>';
+    return '<div class="info-box red"><span class="info-ico">⚠</span><span>FFmpeg not installed on server. Choose 480p or 360p — those have audio already embedded.</span></div>';
+}
+
+// ── DOWNLOAD FLOWS ────────────────────────────────────────────────────────────
+/**
+ * For qualities that need merge:
+ * 1. Fetch fresh Cobalt URLs (they expire quickly — do this right before merge)
+ * 2. POST to /api/merge which downloads + FFmpegs + streams result
+ */
+async function startMergeFlow(mediaUrl, quality, filename, btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin-dark"></span> FETCHING FRESH URLs…';
+
+    try {
+        // Get fresh Cobalt URLs
+        const data = await apiPost('/api/fetch', { url: mediaUrl, quality, audioOnly: false }, 30000);
+
+        if (!data.url) throw new Error('No video URL returned from server. Try again.');
+
+        // Cobalt returns video in data.url; if audio is separate it's in data.audio
+        const videoUrl = data.url;
+        const audioUrl = data.audio || null;
+
+        if (!audioUrl) {
+            // Actually has audio embedded — just stream it
+            btn.disabled = false;
+            btn.innerHTML = '⬇ DOWNLOADING…';
+            triggerStream(videoUrl, filename);
+            setTimeout(() => { btn.innerHTML = '✓ STARTED'; }, 1000);
+            return;
         }
 
-        function selectQuality(idx, qualities, platform, ffmpeg) {
-            // Update button selection
-            document.querySelectorAll('#q-grid .q-btn').forEach((b, i) => {
-                b.className = 'q-btn' + (i === idx ? ' sel' : '');
-            });
+        // Merge on server
+        btn.innerHTML = '<span class="spin-dark"></span> MERGING ON SERVER…';
 
-            const q = qualities[idx];
+        const r = await fetch(BACKEND + '/api/merge', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ videoUrl, audioUrl, filename }),
+        });
 
-            // Update audio info
-            const aInfo = document.getElementById('audio-info');
-            if (aInfo) aInfo.innerHTML = buildAudioInfo(q, ffmpeg);
-
-            // Update badge
-            const badgeWrap = document.getElementById('badge-wrap');
-            if (badgeWrap) {
-                badgeWrap.innerHTML = q.needsMerge
-                    ? '<span class="audio-badge merge">🔀 Server merges audio</span>'
-                    : '<span class="audio-badge has">🔊 Audio included</span>';
-            }
-
-            // Update download button
-            const dlBtn = document.getElementById('main-dl');
-            if (!dlBtn) return;
-
-            const sizeStr = fmtSize(q.size);
-            const label = q.label === 'Best' ? 'BEST' : q.label.toUpperCase();
-            dlBtn.innerHTML = `⬇ DOWNLOAD ${label}${sizeStr ? ' · ' + sizeStr : ''}`;
-
-            if (q.needsMerge && q.url && q.audioUrl && ffmpeg) {
-                // Use merge endpoint
-                dlBtn.onclick = () => doMergeDownload(q.url, q.audioUrl, `video_${q.quality || 'best'}.mp4`);
-            } else if (q.url) {
-                // Direct stream
-                const filename = `video_${q.quality || 'best'}.mp4`;
-                dlBtn.onclick = () => triggerStream(q.url, filename);
-            } else {
-                dlBtn.disabled = true;
-                dlBtn.innerHTML = '✗ Not available';
-            }
+        if (!r.ok) {
+            const err = await r.json().catch(() => ({ error: `HTTP ${r.status}` }));
+            throw new Error(err.error || 'Merge failed');
         }
 
-        function buildAudioInfo(q, ffmpeg) {
-            if (!q.needsMerge) {
-                return '<div class="info-box green"><span class="info-ico">✓</span><span>This file already contains audio — download and play directly.</span></div>';
-            }
-            if (ffmpeg) {
-                return '<div class="info-box orange"><span class="info-ico">🔀</span><span>YouTube serves video and audio separately for high quality. The server will merge them with FFmpeg — your final file will have full audio.</span></div>';
-            }
-            return '<div class="info-box red"><span class="info-ico">⚠</span><span>FFmpeg is not installed on the server. This quality requires merging — choose 480p or 360p instead (audio is embedded).</span></div>';
+        const blob = await r.blob();
+        if (blob.size === 0) throw new Error('Server returned empty file. CDN URL may have expired — click GRAB IT again and try immediately.');
+
+        const objUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = objUrl; a.download = filename;
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { URL.revokeObjectURL(objUrl); document.body.removeChild(a); }, 500);
+
+        btn.disabled = false;
+        btn.innerHTML = '✓ DOWNLOADED';
+    } catch (e) {
+        btn.disabled = false;
+        btn.innerHTML = '↺ RETRY DOWNLOAD';
+        showAlert('err', e.message);
+    }
+}
+
+/**
+ * For qualities with embedded audio:
+ * Fetch fresh Cobalt URL then stream through /api/stream
+ */
+async function startDirectFlow(mediaUrl, quality, filename, btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin-dark"></span> GETTING LINK…';
+    try {
+        const data = await apiPost('/api/fetch', { url: mediaUrl, quality, audioOnly: false }, 30000);
+        if (!data.url) throw new Error('No URL returned. Try again.');
+
+        // If server says merge needed (unexpected), fall back to merge flow
+        if (data.audio && data.audio !== data.url) {
+            btn.disabled = false;
+            return startMergeFlow(mediaUrl, quality, filename, btn);
         }
 
-        // ── AUDIO ONLY ────────────────────────────────────────────────────────────────
-        function renderAudio(data, platform, origUrl) {
-            const pl = PL[platform] || PL.youtube;
-            const area = document.getElementById('result-area');
-            const dlUrl = data.url || '';
-            const filename = data.filename || 'audio.mp3';
+        triggerStream(data.url, filename);
+        btn.disabled = false;
+        btn.innerHTML = '✓ DOWNLOADING…';
+    } catch (e) {
+        btn.disabled = false;
+        btn.innerHTML = '↺ RETRY';
+        showAlert('err', e.message);
+    }
+}
 
-            area.innerHTML = `
+function triggerStream(dlUrl, filename) {
+    const proxied = `${BACKEND}/api/stream?url=${encodeURIComponent(dlUrl)}&filename=${encodeURIComponent(filename)}`;
+    const a = document.createElement('a');
+    a.href = proxied; a.download = filename; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    document.body.appendChild(a); a.click();
+    setTimeout(() => document.body.removeChild(a), 200);
+}
+
+// ── AUDIO ONLY ────────────────────────────────────────────────────────────────
+function renderAudio(fetchData, info, platform) {
+    const pl = PL[platform] || PL.youtube;
+    const area = document.getElementById('result-area');
+    const dlUrl = fetchData.url || '';
+    const filename = sanitize(info.title || 'audio') + '.mp3';
+
+    area.innerHTML = `
 <div class="card">
     <div class="card-head">
         <div class="card-icon">🎵</div>
         <div class="card-meta">
-            <div class="card-title">Audio Ready</div>
+            <div class="card-title">${esc(info.title || 'Audio')}</div>
+            ${info.uploader ? `<div class="card-uploader">${esc(info.uploader)}</div>` : ''}
             <div class="card-sub">${esc(pl.label)} &nbsp;·&nbsp; <span class="audio-badge has">🎵 MP3</span></div>
         </div>
     </div>
     <div class="card-body">
-        <div class="info-box green"><span class="info-ico">🎵</span><span>Audio extracted at best available quality.</span></div>
+        <div class="info-box green"><span class="info-ico">🎵</span><span>Best available audio quality extracted.</span></div>
         <button class="dl-btn" id="audio-dl">⬇ DOWNLOAD MP3</button>
     </div>
 </div>`;
+    document.getElementById('audio-dl').onclick = () => triggerStream(dlUrl, filename);
+}
 
-            document.getElementById('audio-dl').onclick = () => triggerStream(dlUrl, filename);
-        }
-
-        // ── DOWNLOAD HELPERS ──────────────────────────────────────────────────────────
-        function triggerStream(dlUrl, filename) {
-            if (!dlUrl) return showAlert('err', 'No download URL available.');
-            const proxied = `${BACKEND}/api/stream?url=${encodeURIComponent(dlUrl)}&filename=${encodeURIComponent(filename)}`;
-            const a = document.createElement('a');
-            a.href = proxied;
-            a.download = filename;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => document.body.removeChild(a), 200);
-        }
-
-        async function doMergeDownload(videoUrl, audioUrl, filename) {
-            const dlBtn = document.getElementById('main-dl');
-            if (dlBtn) { dlBtn.disabled = true; dlBtn.innerHTML = '<span class="spin"></span> MERGING ON SERVER…'; }
-
-            try {
-                const r = await fetch(BACKEND + '/api/merge', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ videoUrl, audioUrl, filename }),
-                });
-
-                if (!r.ok) {
-                    const err = await r.json().catch(() => ({ error: 'Merge failed' }));
-                    throw new Error(err.error || `HTTP ${r.status}`);
-                }
-
-                // Stream the response as a download
-                const blob = await r.blob();
-                if (blob.size === 0) throw new Error('Server returned empty file. Check FFmpeg logs.');
-
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 500);
-
-                if (dlBtn) { dlBtn.disabled = false; dlBtn.innerHTML = '✓ DOWNLOADED'; }
-            } catch (e) {
-                if (dlBtn) { dlBtn.disabled = false; dlBtn.innerHTML = '⬇ RETRY DOWNLOAD'; }
-                showAlert('err', 'Merge failed: ' + e.message);
-            }
-        }
-
-        // ── PICKER ────────────────────────────────────────────────────────────────────
-        let selectedImages = new Set();
-
-        function renderPicker(data, platform) {
-            const area = document.getElementById('result-area');
-            const items = data.picker;
-            selectedImages = new Set(items.map((_, i) => i));
-
-            const gridHTML = items.map((item, i) => {
-                const isVideo = item.type === 'video';
-                const thumb = item.thumb || item.url;
-                return `
-<div class="img-item sel" data-idx="${i}" onclick="toggleImg(${i})">
-    <img src="${esc(thumb)}" alt="Item ${i + 1}" loading="lazy" onerror="this.style.display='none'"/>
-    <div class="img-check">✓</div>
-    <div class="img-num">${i + 1}</div>
-    ${isVideo ? '<div class="img-type">🎬 Video</div>' : ''}
-</div>`;
-            }).join('');
-
-            const itemsB64 = btoa(unescape(encodeURIComponent(JSON.stringify(items))));
-
-            area.innerHTML = `
+// ── PICKER (Instagram multi) ──────────────────────────────────────────────────
+let selectedImages = new Set();
+function renderPicker(info, platform) {
+    const area = document.getElementById('result-area');
+    const items = info.picker;
+    selectedImages = new Set(items.map((_,i)=>i));
+    const gridHTML = items.map((item,i) => {
+        const isVideo = item.type === 'video';
+        const thumb = item.thumb || item.url;
+        return `<div class="img-item sel" data-idx="${i}" onclick="toggleImg(${i})">
+            <img src="${esc(thumb)}" alt="Item ${i+1}" loading="lazy" onerror="this.style.display='none'"/>
+            <div class="img-check">✓</div><div class="img-num">${i+1}</div>
+            ${isVideo?'<div class="img-type">🎬 Video</div>':''}
+        </div>`;
+    }).join('');
+    const itemsB64 = btoa(unescape(encodeURIComponent(JSON.stringify(items))));
+    area.innerHTML = `
 <div class="card">
     <div class="card-head">
         <div class="card-icon">◈</div>
         <div class="card-meta">
-            <div class="card-title">Instagram Post — ${items.length} item${items.length > 1 ? 's' : ''}</div>
+            <div class="card-title">Instagram Post — ${items.length} item${items.length>1?'s':''}</div>
             <div class="card-sub"><span class="audio-badge has">🔊 Audio included</span></div>
         </div>
     </div>
     <div class="card-body">
-        <div class="info-box green"><span class="info-ico">✓</span><span>Instagram posts always have audio embedded in video items.</span></div>
+        <div class="info-box green"><span class="info-ico">✓</span><span>Audio is embedded in all video items.</span></div>
         <div class="img-controls">
             <button class="ctrl-btn" onclick="selectAllImgs(true)">Select All</button>
             <button class="ctrl-btn" onclick="selectAllImgs(false)">Deselect All</button>
@@ -1349,79 +620,60 @@
         <button class="dl-btn" id="dl-all-btn">⬇ DOWNLOAD SELECTED (${items.length})</button>
     </div>
 </div>`;
+    document.getElementById('dl-all-btn').onclick = () => {
+        const decoded = JSON.parse(decodeURIComponent(escape(atob(itemsB64))));
+        downloadSelected(decoded);
+    };
+}
+function toggleImg(idx) {
+    const el = document.querySelector(`.img-item[data-idx="${idx}"]`);
+    if (!el) return;
+    if (selectedImages.has(idx)) { selectedImages.delete(idx); el.classList.remove('sel'); el.querySelector('.img-check').textContent=''; }
+    else { selectedImages.add(idx); el.classList.add('sel'); el.querySelector('.img-check').textContent='✓'; }
+    const cnt = selectedImages.size;
+    document.getElementById('sel-count').textContent = cnt+' selected';
+    const b = document.getElementById('dl-all-btn'); if(b) b.textContent=`⬇ DOWNLOAD SELECTED (${cnt})`;
+}
+function selectAllImgs(val) {
+    document.querySelectorAll('.img-item').forEach(el => {
+        const idx=parseInt(el.dataset.idx);
+        if(val){selectedImages.add(idx);el.classList.add('sel');el.querySelector('.img-check').textContent='✓';}
+        else{selectedImages.delete(idx);el.classList.remove('sel');el.querySelector('.img-check').textContent='';}
+    });
+    const cnt=selectedImages.size;
+    document.getElementById('sel-count').textContent=cnt+' selected';
+    const b=document.getElementById('dl-all-btn');if(b)b.textContent=`⬇ DOWNLOAD SELECTED (${cnt})`;
+}
+async function downloadSelected(items) {
+    if (selectedImages.size===0) return showAlert('warn','No items selected.');
+    const toDownload = [...selectedImages].sort((a,b)=>a-b).map(i=>items[i]);
+    for (let i=0;i<toDownload.length;i++) {
+        const item=toDownload[i];
+        const ext=item.type==='video'?'mp4':getExt(item.url);
+        triggerStream(item.url,`instagram_${i+1}.${ext}`);
+        if (i<toDownload.length-1) await sleep(800);
+    }
+}
 
-            document.getElementById('dl-all-btn').onclick = () => {
-                const decoded = JSON.parse(decodeURIComponent(escape(atob(itemsB64))));
-                downloadSelected(decoded);
-            };
-        }
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function showAlert(type, msg) {
+    const icons = {err:'⚠',warn:'ℹ',ok:'✓'};
+    document.getElementById('result-area').innerHTML = `
+<div class="alert ${type}"><div class="alert-ico">${icons[type]||'ℹ'}</div><div>${esc(msg)}</div></div>`;
+}
+function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+function getExt(u) { try{const m=new URL(u).pathname.match(/\.(\w{2,4})(\?|$)/);return m?m[1]:'jpg';}catch{return 'jpg';} }
 
-        function toggleImg(idx) {
-            const el = document.querySelector(`.img-item[data-idx="${idx}"]`);
-            if (!el) return;
-            if (selectedImages.has(idx)) {
-                selectedImages.delete(idx); el.classList.remove('sel'); el.querySelector('.img-check').textContent = '';
-            } else {
-                selectedImages.add(idx); el.classList.add('sel'); el.querySelector('.img-check').textContent = '✓';
-            }
-            const cnt = selectedImages.size;
-            document.getElementById('sel-count').textContent = cnt + ' selected';
-            const b = document.getElementById('dl-all-btn');
-            if (b) b.textContent = `⬇ DOWNLOAD SELECTED (${cnt})`;
-        }
+inp.addEventListener('keydown', e => { if(e.key==='Enter') doFetch(); });
+window.addEventListener('focus', async () => {
+    if (inp.value) return;
+    try { const t=await navigator.clipboard.readText(); if(detectPlatform(t)){inp.value=t;inp.dispatchEvent(new Event('input'));} } catch(_){}
+});
 
-        function selectAllImgs(val) {
-            document.querySelectorAll('.img-item').forEach(el => {
-                const idx = parseInt(el.dataset.idx);
-                if (val) { selectedImages.add(idx); el.classList.add('sel'); el.querySelector('.img-check').textContent = '✓'; }
-                else { selectedImages.delete(idx); el.classList.remove('sel'); el.querySelector('.img-check').textContent = ''; }
-            });
-            const cnt = selectedImages.size;
-            document.getElementById('sel-count').textContent = cnt + ' selected';
-            const b = document.getElementById('dl-all-btn');
-            if (b) b.textContent = `⬇ DOWNLOAD SELECTED (${cnt})`;
-        }
-
-        async function downloadSelected(items) {
-            if (selectedImages.size === 0) return showAlert('warn', 'No items selected.');
-            const toDownload = [...selectedImages].sort((a, b) => a - b).map(i => items[i]);
-            for (let i = 0; i < toDownload.length; i++) {
-                const item = toDownload[i];
-                const ext = item.type === 'video' ? 'mp4' : getExt(item.url);
-                const fname = `instagram_${i + 1}.${ext}`;
-                triggerStream(item.url, fname);
-                if (i < toDownload.length - 1) await sleep(800);
-            }
-        }
-
-        // ── UTILS ─────────────────────────────────────────────────────────────────────
-        function showAlert(type, msg) {
-            const icons = { err: '⚠', warn: 'ℹ', ok: '✓' };
-            document.getElementById('result-area').innerHTML = `
-<div class="alert ${type}">
-    <div class="alert-ico">${icons[type] || 'ℹ'}</div>
-    <div>${esc(msg)}</div>
-</div>`;
-        }
-
-        function esc(s) {
-            if (!s) return '';
-            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-        }
-        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-        function getExt(u) {
-            try { const m = new URL(u).pathname.match(/\.(\w{2,4})(\?|$)/); return m ? m[1] : 'jpg'; }
-            catch { return 'jpg'; }
-        }
-
-        inp.addEventListener('keydown', e => { if (e.key === 'Enter') doFetch(); });
-        window.addEventListener('focus', async () => {
-            if (inp.value) return;
-            try { const t = await navigator.clipboard.readText(); if (detectPlatform(t)) { inp.value = t; inp.dispatchEvent(new Event('input')); } } catch (_) { }
-        });
-
-        checkServer();
-    </script>
+checkServer();
+</script>
 </body>
-
 </html>
