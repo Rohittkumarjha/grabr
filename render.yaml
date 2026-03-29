@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: grabr
+    env: node
+    plan: free
+    buildCommand: "pip3 install --upgrade yt-dlp && npm install"
+    startCommand: "node server/index.js"
+    envVars:
+      - key: COBALT_INSTANCE
+        sync: false
+      - key: PORT
+        value: 3000

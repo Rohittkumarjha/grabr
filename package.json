@@ -1,14 +1,16 @@
 {
-  "name": "grabr-media-downloader",
-  "version": "1.0.0",
-  "description": "Client+server media downloader for YouTube, Instagram, TikTok",
+  "name": "grabr",
+  "version": "5.0.0",
+  "description": "Media downloader — YouTube, Instagram, TikTok",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "node --watch server/index.js"
+    "dev": "node server/index.js",
+    "postinstall": "pip3 install --quiet --upgrade yt-dlp || pip install --quiet --upgrade yt-dlp || echo 'pip not available, yt-dlp will be installed at runtime'"
   },
   "engines": {
     "node": ">=18"
   },
+  "keywords": ["downloader", "youtube", "instagram", "tiktok"],
   "license": "MIT"
 }

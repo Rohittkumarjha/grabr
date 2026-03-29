@@ -45,15 +45,10 @@
         .platform-row { min-height:28px; display:flex; align-items:center; gap:8px; margin-top:7px; padding-left:4px }
         .det-pill { display:inline-flex; align-items:center; gap:5px; padding:3px 11px; border-radius:100px; font-size:.74rem; font-weight:500; opacity:0; transform:translateY(-4px); transition:opacity .25s,transform .25s }
         .det-pill.show { opacity:1; transform:translateY(0) }
-        .det-pill.youtube  { background:rgba(255,48,64,.1);  border:1px solid rgba(255,48,64,.3);  color:#ff7070 }
-        .det-pill.instagram{ background:rgba(193,53,132,.1); border:1px solid rgba(193,53,132,.3); color:#e879a0 }
-        .det-pill.tiktok   { background:rgba(105,201,208,.1);border:1px solid rgba(105,201,208,.3);color:#69c9d0 }
-        .det-pill.twitter  { background:rgba(100,116,139,.1);border:1px solid rgba(100,116,139,.3);color:#94a3b8 }
-
-        #mode-row { display:flex; gap:6px; margin-top:10px; opacity:0; transition:opacity .3s; pointer-events:none }
-        #mode-row.show { opacity:1; pointer-events:auto }
-        .mode-btn { flex:1; padding:8px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--s2); color:var(--muted); font-family:'DM Sans',sans-serif; font-size:.78rem; cursor:pointer; transition:all .15s }
-        .mode-btn.active { border-color:var(--red); background:rgba(255,48,64,.08); color:var(--red) }
+        .det-pill.youtube   { background:rgba(255,48,64,.1);  border:1px solid rgba(255,48,64,.3);  color:#ff7070 }
+        .det-pill.instagram { background:rgba(193,53,132,.1); border:1px solid rgba(193,53,132,.3); color:#e879a0 }
+        .det-pill.tiktok    { background:rgba(105,201,208,.1);border:1px solid rgba(105,201,208,.3);color:#69c9d0 }
+        .det-pill.twitter   { background:rgba(100,116,139,.1);border:1px solid rgba(100,116,139,.3);color:#94a3b8 }
 
         #fetch-btn { width:100%; margin-top:10px; padding:15px; background:linear-gradient(130deg,var(--red),var(--orange)); color:#fff; border:none; border-radius:var(--r); font-family:'Bebas Neue',sans-serif; font-size:1.25rem; letter-spacing:3.5px; cursor:pointer; transition:opacity .2s,transform .1s; display:flex; align-items:center; justify-content:center; gap:9px; position:relative; overflow:hidden }
         #fetch-btn::after { content:''; position:absolute; inset:0; background:linear-gradient(rgba(255,255,255,.08),transparent) }
@@ -69,12 +64,15 @@
         #result-area { max-width:760px; margin:28px auto 70px; padding:0 20px }
         @keyframes up { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 
+        /* Card */
         .card { background:var(--s1); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; animation:up .35s cubic-bezier(.16,1,.3,1) }
-        .card-head { padding:18px 22px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:12px }
-        .card-icon { width:52px; height:52px; border-radius:10px; background:var(--s2); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin-top:2px }
+        .card-head { padding:18px 22px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:14px }
+        .card-thumb { width:90px; height:62px; border-radius:9px; background:var(--s2); flex-shrink:0; overflow:hidden; position:relative }
+        .card-thumb img { width:100%; height:100%; object-fit:cover; display:block }
+        .card-thumb-placeholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:1.6rem }
         .card-meta { flex:1; min-width:0 }
-        .card-title { font-weight:600; font-size:.95rem; line-height:1.3; word-break:break-word }
-        .card-uploader { color:var(--muted); font-size:.78rem; margin-top:2px }
+        .card-title { font-weight:600; font-size:.95rem; line-height:1.35; word-break:break-word }
+        .card-uploader { color:var(--muted); font-size:.78rem; margin-top:3px }
         .card-sub { color:var(--muted); font-size:.78rem; margin-top:5px; display:flex; align-items:center; gap:6px; flex-wrap:wrap }
         .audio-badge { display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:100px; font-size:.65rem; font-weight:600; letter-spacing:.3px }
         .audio-badge.has   { background:rgba(0,230,118,.1);  border:1px solid rgba(0,230,118,.25);  color:var(--green) }
@@ -95,6 +93,11 @@
         .q-btn.sel .q-note { color:rgba(255,48,64,.5) }
         .q-btn.sel .q-size { color:rgba(79,195,247,.85) }
 
+        /* Also show audio-only quality */
+        .q-btn.audio-q { border-color:rgba(0,230,118,.2); }
+        .q-btn.audio-q .q-label { color:var(--green) }
+        .q-btn.audio-q.sel { border-color:var(--green); background:rgba(0,230,118,.08) }
+
         .info-box { padding:11px 14px; border-radius:var(--r-sm); font-size:.82rem; display:flex; gap:9px; margin-bottom:16px; align-items:flex-start; line-height:1.45 }
         .info-box.green  { background:rgba(0,230,118,.06);  border:1px solid rgba(0,230,118,.18);  color:rgba(0,230,118,.9) }
         .info-box.orange { background:rgba(255,140,0,.06);  border:1px solid rgba(255,140,0,.18);  color:rgba(255,140,0,.9) }
@@ -105,8 +108,7 @@
         .dl-btn:hover { opacity:.88 }
         .dl-btn:disabled { opacity:.4; cursor:not-allowed; pointer-events:none }
 
-        /* expiry warning */
-        .expiry-warn { font-size:.75rem; color:var(--muted); text-align:center; margin-top:8px; padding:6px; }
+        .expiry-warn { font-size:.75rem; color:var(--muted); text-align:center; margin-top:8px; padding:6px }
         .expiry-warn strong { color:var(--orange) }
 
         /* img picker */
@@ -143,7 +145,7 @@
         .step p { color:var(--muted); font-size:.84rem; line-height:1.5 }
         .step p strong { color:var(--text) }
 
-        @media(max-width:580px) { header{padding:14px 18px} .pills{display:none} .hero{padding:44px 20px 30px} .img-grid{grid-template-columns:repeat(2,1fr)} #mode-row{flex-direction:column} }
+        @media(max-width:580px) { header{padding:14px 18px} .pills{display:none} .hero{padding:44px 20px 30px} .img-grid{grid-template-columns:repeat(2,1fr)} .card-thumb{width:68px;height:48px} }
     </style>
 </head>
 <body>
@@ -163,7 +165,7 @@
 <section class="hero">
     <div class="hero-glow"></div>
     <h1>GRAB ANY<br /><em>MEDIA.</em></h1>
-    <p class="hero-sub">Real title · Real available qualities · Real file sizes · No fake data.</p>
+    <p class="hero-sub">Real title · Real qualities · Real sizes · Thumbnail preview · No fake data.</p>
 </section>
 
 <div class="wrap" style="margin-bottom:18px">
@@ -174,10 +176,6 @@
     </div>
     <div class="platform-row">
         <div id="det-pill" class="det-pill"></div>
-    </div>
-    <div id="mode-row">
-        <button class="mode-btn active" id="mode-video" onclick="setMode('video')">🎬 Video + Audio</button>
-        <button class="mode-btn" id="mode-audio" onclick="setMode('audio')">🎵 Audio Only (MP3)</button>
     </div>
     <button id="fetch-btn" onclick="doFetch()">⬇ GRAB IT</button>
     <div class="srv-bar">
@@ -191,10 +189,10 @@
 <section class="steps">
     <div class="steps-inner">
         <h3>How It Works</h3>
-        <div class="step"><div class="step-n">🔍</div><p><strong>yt-dlp on the server</strong> reads the real available qualities directly from YouTube/source — only qualities that actually exist for this specific video are shown.</p></div>
-        <div class="step"><div class="step-n">📐</div><p><strong>Accurate file sizes</strong> — sizes come from the CDN manifest, not guesses. If size shows as "—" the CDN didn't report it.</p></div>
-        <div class="step"><div class="step-n">🔀</div><p><strong>YouTube 720p+</strong> needs FFmpeg merge. The server downloads video and audio separately and merges them. <strong>Download starts after merge completes</strong> — this may take 30–90 seconds for long videos.</p></div>
-        <div class="step"><div class="step-n">⚠</div><p><strong>If download is 0 bytes</strong>: the CDN URL expired (they last ~6 minutes). Click <strong>GRAB IT</strong> again to get fresh URLs, then download immediately.</p></div>
+        <div class="step"><div class="step-n">🔍</div><p><strong>yt-dlp on the server</strong> reads all available qualities from YouTube — only real formats are shown with accurate file sizes.</p></div>
+        <div class="step"><div class="step-n">📐</div><p><strong>All formats shown</strong> — video qualities (360p → 1080p+) plus MP3 audio extraction. Sizes come from the CDN manifest.</p></div>
+        <div class="step"><div class="step-n">🔀</div><p><strong>YouTube 720p+</strong> needs FFmpeg merge. The server downloads video and audio separately and merges them. <strong>Download starts after merge completes</strong> (~30–90s for long videos).</p></div>
+        <div class="step"><div class="step-n">⚠</div><p><strong>If download is 0 bytes</strong>: CDN URL expired (~6 min). Click <strong>GRAB IT</strong> again, then download immediately.</p></div>
     </div>
 </section>
 
@@ -207,12 +205,9 @@ const BACKEND = (() => {
     return REMOTE_BACKEND;
 })();
 
-let currentMode = 'video';
 let serverHasFFmpeg = false;
 let serverHasYtdlp  = false;
-
-// State for current video (so we can re-fetch on expiry)
-let currentState = { url: null, qualities: [], platform: null, title: '' };
+let currentState = { url: null, qualities: [], platform: null, title: '', thumbnail: '' };
 
 // ── SERVER CHECK ──────────────────────────────────────────────────────────────
 async function checkServer() {
@@ -220,7 +215,7 @@ async function checkServer() {
     const txt = document.getElementById('srv-txt');
     try {
         const ctrl = new AbortController();
-        setTimeout(() => ctrl.abort(), 5000);
+        setTimeout(() => ctrl.abort(), 8000);
         const r = await fetch(BACKEND + '/api/health', { signal: ctrl.signal });
         if (!r.ok) throw new Error();
         const d = await r.json();
@@ -229,9 +224,9 @@ async function checkServer() {
         dot.className = 'dot ok';
         const parts = [];
         if (d.ytdlp)  parts.push('<span style="color:var(--green)">✓ yt-dlp</span>');
-        else          parts.push('<span style="color:var(--orange)">✗ yt-dlp missing (install for accurate qualities)</span>');
+        else          parts.push('<span style="color:var(--orange)">⚙ yt-dlp installing…</span>');
         if (d.ffmpeg) parts.push('<span style="color:var(--green)">✓ FFmpeg</span>');
-        else          parts.push('<span style="color:var(--orange)">✗ FFmpeg missing (no audio merge)</span>');
+        else          parts.push('<span style="color:var(--orange)">✗ FFmpeg missing</span>');
         txt.innerHTML = 'Backend connected &nbsp;·&nbsp; ' + parts.join(' &nbsp;·&nbsp; ');
     } catch {
         dot.className = 'dot err';
@@ -259,26 +254,19 @@ const PL = {
 
 const inp = document.getElementById('url-input');
 const pill = document.getElementById('det-pill');
-const modeRow = document.getElementById('mode-row');
 
 inp.addEventListener('input', () => {
     const p = detectPlatform(inp.value.trim());
-    if (p) { pill.textContent = PL[p].label; pill.className = `det-pill show ${PL[p].cls}`; modeRow.className = 'show'; }
-    else   { pill.className = 'det-pill'; modeRow.className = ''; }
+    if (p) { pill.textContent = PL[p].label; pill.className = `det-pill show ${PL[p].cls}`; }
+    else   { pill.className = 'det-pill'; }
 });
-
-function setMode(m) {
-    currentMode = m;
-    document.getElementById('mode-video').className = 'mode-btn' + (m==='video' ? ' active' : '');
-    document.getElementById('mode-audio').className = 'mode-btn' + (m==='audio' ? ' active' : '');
-}
 
 async function doPaste() {
     try { const t = await navigator.clipboard.readText(); inp.value = t; inp.dispatchEvent(new Event('input')); }
     catch { inp.focus(); }
 }
 
-// ── MAIN FETCH FLOW ───────────────────────────────────────────────────────────
+// ── MAIN FETCH ────────────────────────────────────────────────────────────────
 async function doFetch() {
     const rawUrl = inp.value.trim();
     if (!rawUrl) return showAlert('err', 'Please paste a link first.');
@@ -291,21 +279,19 @@ async function doFetch() {
     document.getElementById('result-area').innerHTML = '';
 
     try {
-        // Step 1: Get real info (title + quality list) via yt-dlp on server
-        const info = await apiPost('/api/info', { url: rawUrl }, 45000);
+        const info = await apiPost('/api/info', { url: rawUrl }, 60000);
 
         if (info.picker && Array.isArray(info.picker)) {
             return renderPicker(info, platform);
         }
 
-        if (currentMode === 'audio') {
-            // For audio: just fetch directly
-            const fetchData = await apiPost('/api/fetch', { url: rawUrl, quality: 'max', audioOnly: true }, 30000);
-            return renderAudio(fetchData, info, platform);
-        }
-
-        // Store state for re-fetch on expiry
-        currentState = { url: rawUrl, qualities: info.qualities || [], platform, title: info.title || 'video' };
+        currentState = {
+            url: rawUrl,
+            qualities: info.qualities || [],
+            platform,
+            title: info.title || 'video',
+            thumbnail: info.thumbnail || '',
+        };
         renderVideoCard(info, platform);
 
     } catch (e) {
@@ -334,7 +320,7 @@ async function apiPost(endpoint, body, timeout = 30000) {
         clearTimeout(tid);
         if (e.name === 'AbortError') throw new Error('Request timed out. Try again.');
         if (e.message?.includes('Failed to fetch') || e.message?.includes('NetworkError'))
-            throw new Error('Cannot reach backend server. Start it: node server/index.js');
+            throw new Error('Cannot reach backend server.');
         throw e;
     }
 }
@@ -345,17 +331,20 @@ function fmtSize(bytes) {
     if (bytes < 1024*1024) return (bytes/1024).toFixed(0)+' KB';
     return (bytes/1024/1024).toFixed(1)+' MB';
 }
-
 function fmtDuration(secs) {
     if (!secs) return '';
     const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
     if (h) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     return `${m}:${String(s).padStart(2,'0')}`;
 }
-
 function sanitize(s) {
     return String(s||'').replace(/[^a-zA-Z0-9._\- ]/g,'_').slice(0,100);
 }
+function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+function getExt(u) { try{const m=new URL(u).pathname.match(/\.(\w{2,4})(\?|$)/);return m?m[1]:'jpg';}catch{return 'jpg';} }
 
 // ── RENDER VIDEO CARD ─────────────────────────────────────────────────────────
 function renderVideoCard(info, platform) {
@@ -363,14 +352,24 @@ function renderVideoCard(info, platform) {
     const qualities = info.qualities || [];
     const area = document.getElementById('result-area');
     const dur = fmtDuration(info.duration);
+    const thumb = info.thumbnail || '';
+
+    // Build a list that includes video qualities + MP3 audio-only option
+    const allOptions = [...qualities];
+    // Add MP3 option at the end
+    allOptions.push({ quality: 'audio', label: 'MP3', needsMerge: false, hasAudio: true, size: 0, ext: 'mp3', audioOnly: true });
+
+    const thumbHtml = thumb
+        ? `<img src="${esc(thumb)}" alt="thumbnail" onerror="this.parentElement.innerHTML='<div class=\\'card-thumb-placeholder\\'>${esc(pl.icon)}</div>'" />`
+        : `<div class="card-thumb-placeholder">${esc(pl.icon)}</div>`;
 
     area.innerHTML = `
 <div class="card">
     <div class="card-head">
-        <div class="card-icon">${esc(pl.icon)}</div>
+        <div class="card-thumb">${thumbHtml}</div>
         <div class="card-meta">
             <div class="card-title">${esc(info.title || 'Video')}</div>
-            ${info.uploader ? `<div class="card-uploader">${esc(info.uploader)}</div>` : ''}
+            ${info.uploader ? `<div class="card-uploader">@${esc(info.uploader)}</div>` : ''}
             <div class="card-sub">
                 ${esc(pl.label)}
                 ${dur ? `&nbsp;·&nbsp; ${esc(dur)}` : ''}
@@ -380,16 +379,15 @@ function renderVideoCard(info, platform) {
     </div>
     <div class="card-body">
         <div id="audio-info"></div>
-        <div class="sec-label">${qualities.length} Available Qualit${qualities.length===1?'y':'ies'}</div>
+        <div class="sec-label">${qualities.length} Video Qualit${qualities.length===1?'y':'ies'} + Audio Extract</div>
         <div class="q-grid" id="q-grid"></div>
-        <button class="dl-btn" id="main-dl" disabled>⬇ SELECT A QUALITY</button>
-        <div class="expiry-warn">⏱ CDN URLs expire in ~6 min. If you get a 0-byte file, click <strong>GRAB IT</strong> again and download immediately.</div>
+        <button class="dl-btn" id="main-dl" disabled>⬇ SELECT A FORMAT</button>
+        <div class="expiry-warn">⏱ CDN URLs expire ~6 min after grabbing. If you get a 0-byte file, click <strong>GRAB IT</strong> again then download immediately.</div>
     </div>
 </div>`;
 
-    buildQGrid(qualities, platform, info);
-    // Auto-select first quality
-    if (qualities.length > 0) selectQuality(0, qualities, platform, info);
+    buildQGrid(allOptions, platform, info);
+    if (allOptions.length > 0) selectQuality(0, allOptions, platform, info);
 }
 
 function buildQGrid(qualities, platform, info) {
@@ -398,14 +396,17 @@ function buildQGrid(qualities, platform, info) {
     grid.innerHTML = '';
     qualities.forEach((q, i) => {
         const btn = document.createElement('button');
-        btn.className = 'q-btn';
+        const isAudioOnly = !!q.audioOnly;
+        btn.className = 'q-btn' + (isAudioOnly ? ' audio-q' : '');
         btn.dataset.idx = i;
         const sizeStr = fmtSize(q.size);
-        const needsMergeOk = q.needsMerge && serverHasFFmpeg;
-        const needsMergeNo = q.needsMerge && !serverHasFFmpeg;
-        const noteStr = needsMergeNo ? '⚠ no FFmpeg' : q.needsMerge ? '🔀 merge' : '🔊 audio';
+        let noteStr;
+        if (isAudioOnly)           noteStr = '🎵 audio only';
+        else if (q.needsMerge && serverHasFFmpeg) noteStr = '🔀 merge';
+        else if (q.needsMerge && !serverHasFFmpeg) noteStr = '⚠ no FFmpeg';
+        else                       noteStr = '🔊 audio';
         btn.innerHTML = `
-            <span class="q-label">${q.label === 'Best' ? '🏆 Best' : q.label}</span>
+            <span class="q-label">${q.label === 'Best' ? '🏆 Best' : isAudioOnly ? '🎵 '+q.label : q.label}</span>
             <span class="q-note">${noteStr}</span>
             ${sizeStr ? `<span class="q-size">~${sizeStr}</span>` : '<span class="q-size">—</span>'}`;
         btn.onclick = () => selectQuality(i, qualities, platform, info);
@@ -414,13 +415,18 @@ function buildQGrid(qualities, platform, info) {
 }
 
 function selectQuality(idx, qualities, platform, info) {
-    document.querySelectorAll('#q-grid .q-btn').forEach((b,i) => b.className = 'q-btn'+(i===idx?' sel':''));
+    document.querySelectorAll('#q-grid .q-btn').forEach((b,i) => {
+        b.className = 'q-btn' + (qualities[i]?.audioOnly ? ' audio-q' : '') + (i===idx?' sel':'');
+    });
     const q = qualities[idx];
+    const isAudioOnly = !!q.audioOnly;
 
-    // Update badge
+    // Badge
     const badge = document.getElementById('main-badge');
     if (badge) {
-        if (q.needsMerge && serverHasFFmpeg)
+        if (isAudioOnly)
+            badge.innerHTML = '<span class="audio-badge has">🎵 MP3 Audio</span>';
+        else if (q.needsMerge && serverHasFFmpeg)
             badge.innerHTML = '<span class="audio-badge merge">🔀 Server merges audio</span>';
         else if (q.needsMerge && !serverHasFFmpeg)
             badge.innerHTML = '<span class="audio-badge warn">⚠ FFmpeg missing</span>';
@@ -428,86 +434,95 @@ function selectQuality(idx, qualities, platform, info) {
             badge.innerHTML = '<span class="audio-badge has">🔊 Audio included</span>';
     }
 
-    // Update info box
+    // Info box
     const aInfo = document.getElementById('audio-info');
-    if (aInfo) aInfo.innerHTML = buildAudioInfo(q);
+    if (aInfo) {
+        if (isAudioOnly)
+            aInfo.innerHTML = '<div class="info-box green"><span class="info-ico">🎵</span><span>Best available audio quality will be extracted as MP3.</span></div>';
+        else
+            aInfo.innerHTML = buildAudioInfo(q);
+    }
 
-    // Update download button
+    // Download button
     const dlBtn = document.getElementById('main-dl');
     if (!dlBtn) return;
-    dlBtn.disabled = false;
 
-    const label = q.label === 'Best' ? 'BEST' : q.label.toUpperCase();
-    const sizeStr = fmtSize(q.size);
-    dlBtn.innerHTML = `⬇ DOWNLOAD ${label}${sizeStr ? ' · ~'+sizeStr : ''}`;
-
-    const filename = sanitize(info.title || 'video') + `_${q.quality || 'best'}.mp4`;
-
-    if (q.needsMerge && serverHasFFmpeg) {
-        // Must fetch fresh Cobalt URLs at download time (not at probe time)
-        // to avoid expiry. Fetch + merge happens on click.
-        dlBtn.onclick = () => startMergeFlow(currentState.url, q.quality, filename, dlBtn);
-    } else if (!q.needsMerge) {
-        // Direct stream — also fetch fresh URL on click
-        dlBtn.onclick = () => startDirectFlow(currentState.url, q.quality, filename, dlBtn);
-    } else {
-        // needsMerge but no FFmpeg
+    if (q.needsMerge && !serverHasFFmpeg && !isAudioOnly) {
         dlBtn.disabled = true;
-        dlBtn.innerHTML = '✗ Install FFmpeg on server for this quality';
+        dlBtn.innerHTML = '✗ FFmpeg required — choose 480p/360p or MP3';
+        return;
+    }
+
+    dlBtn.disabled = false;
+    const sizeStr = fmtSize(q.size);
+    const label = isAudioOnly ? 'DOWNLOAD MP3' : `DOWNLOAD ${q.label === 'Best' ? 'BEST' : q.label.toUpperCase()}`;
+    dlBtn.innerHTML = `⬇ ${label}${sizeStr ? ' · ~'+sizeStr : ''}`;
+
+    const ext = isAudioOnly ? 'mp3' : 'mp4';
+    const filename = sanitize(info.title || 'media') + `_${q.quality || 'best'}.${ext}`;
+
+    if (isAudioOnly) {
+        dlBtn.onclick = () => startAudioFlow(currentState.url, filename, dlBtn);
+    } else if (q.needsMerge && serverHasFFmpeg) {
+        dlBtn.onclick = () => startMergeFlow(currentState.url, q.quality, filename, dlBtn);
+    } else {
+        dlBtn.onclick = () => startDirectFlow(currentState.url, q.quality, filename, dlBtn);
     }
 }
 
 function buildAudioInfo(q) {
-    if (!q.needsMerge) return '<div class="info-box green"><span class="info-ico">✓</span><span>Audio already embedded in this format — downloads as a single file.</span></div>';
-    if (serverHasFFmpeg) return '<div class="info-box orange"><span class="info-ico">🔀</span><span>YouTube serves video and audio separately for this quality. The server fetches both and merges them with FFmpeg. <strong>Download will start after merge completes</strong> (~30–90s for long videos).</span></div>';
-    return '<div class="info-box red"><span class="info-ico">⚠</span><span>FFmpeg not installed on server. Choose 480p or 360p — those have audio already embedded.</span></div>';
+    if (!q.needsMerge) return '<div class="info-box green"><span class="info-ico">✓</span><span>Audio already embedded — downloads as a single file instantly.</span></div>';
+    if (serverHasFFmpeg) return '<div class="info-box orange"><span class="info-ico">🔀</span><span>YouTube serves video and audio separately for this quality. Server fetches both and merges with FFmpeg. <strong>Download starts after merge (~30–90s for long videos).</strong></span></div>';
+    return '<div class="info-box red"><span class="info-ico">⚠</span><span>FFmpeg not on server. Choose 480p or below (audio embedded) or pick MP3.</span></div>';
 }
 
 // ── DOWNLOAD FLOWS ────────────────────────────────────────────────────────────
-/**
- * For qualities that need merge:
- * 1. Fetch fresh Cobalt URLs (they expire quickly — do this right before merge)
- * 2. POST to /api/merge which downloads + FFmpegs + streams result
- */
+async function startAudioFlow(mediaUrl, filename, btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin-dark"></span> EXTRACTING AUDIO…';
+    try {
+        const data = await apiPost('/api/fetch', { url: mediaUrl, quality: 'max', audioOnly: true }, 30000);
+        if (!data.url) throw new Error('No audio URL returned. Try again.');
+        triggerStream(data.url, filename);
+        btn.disabled = false;
+        btn.innerHTML = '✓ DOWNLOADING MP3…';
+    } catch (e) {
+        btn.disabled = false;
+        btn.innerHTML = '↺ RETRY';
+        showAlert('err', e.message);
+    }
+}
+
 async function startMergeFlow(mediaUrl, quality, filename, btn) {
     btn.disabled = true;
     btn.innerHTML = '<span class="spin-dark"></span> FETCHING FRESH URLs…';
-
     try {
-        // Get fresh Cobalt URLs
         const data = await apiPost('/api/fetch', { url: mediaUrl, quality, audioOnly: false }, 30000);
+        if (!data.url) throw new Error('No video URL returned. Try again.');
 
-        if (!data.url) throw new Error('No video URL returned from server. Try again.');
-
-        // Cobalt returns video in data.url; if audio is separate it's in data.audio
         const videoUrl = data.url;
         const audioUrl = data.audio || null;
 
-        if (!audioUrl) {
-            // Actually has audio embedded — just stream it
-            btn.disabled = false;
-            btn.innerHTML = '⬇ DOWNLOADING…';
+        if (!audioUrl || audioUrl === videoUrl) {
+            // Audio already embedded
             triggerStream(videoUrl, filename);
-            setTimeout(() => { btn.innerHTML = '✓ STARTED'; }, 1000);
+            btn.disabled = false;
+            btn.innerHTML = '✓ DOWNLOADING…';
             return;
         }
 
-        // Merge on server
-        btn.innerHTML = '<span class="spin-dark"></span> MERGING ON SERVER…';
-
+        btn.innerHTML = '<span class="spin-dark"></span> MERGING ON SERVER… (may take ~30–90s)';
         const r = await fetch(BACKEND + '/api/merge', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ videoUrl, audioUrl, filename }),
         });
-
         if (!r.ok) {
             const err = await r.json().catch(() => ({ error: `HTTP ${r.status}` }));
             throw new Error(err.error || 'Merge failed');
         }
-
         const blob = await r.blob();
-        if (blob.size === 0) throw new Error('Server returned empty file. CDN URL may have expired — click GRAB IT again and try immediately.');
+        if (blob.size === 0) throw new Error('Server returned empty file. CDN URL expired — click GRAB IT again then download immediately.');
 
         const objUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -524,23 +539,16 @@ async function startMergeFlow(mediaUrl, quality, filename, btn) {
     }
 }
 
-/**
- * For qualities with embedded audio:
- * Fetch fresh Cobalt URL then stream through /api/stream
- */
 async function startDirectFlow(mediaUrl, quality, filename, btn) {
     btn.disabled = true;
     btn.innerHTML = '<span class="spin-dark"></span> GETTING LINK…';
     try {
         const data = await apiPost('/api/fetch', { url: mediaUrl, quality, audioOnly: false }, 30000);
         if (!data.url) throw new Error('No URL returned. Try again.');
-
-        // If server says merge needed (unexpected), fall back to merge flow
         if (data.audio && data.audio !== data.url) {
             btn.disabled = false;
             return startMergeFlow(mediaUrl, quality, filename, btn);
         }
-
         triggerStream(data.url, filename);
         btn.disabled = false;
         btn.innerHTML = '✓ DOWNLOADING…';
@@ -557,31 +565,6 @@ function triggerStream(dlUrl, filename) {
     a.href = proxied; a.download = filename; a.target = '_blank'; a.rel = 'noopener noreferrer';
     document.body.appendChild(a); a.click();
     setTimeout(() => document.body.removeChild(a), 200);
-}
-
-// ── AUDIO ONLY ────────────────────────────────────────────────────────────────
-function renderAudio(fetchData, info, platform) {
-    const pl = PL[platform] || PL.youtube;
-    const area = document.getElementById('result-area');
-    const dlUrl = fetchData.url || '';
-    const filename = sanitize(info.title || 'audio') + '.mp3';
-
-    area.innerHTML = `
-<div class="card">
-    <div class="card-head">
-        <div class="card-icon">🎵</div>
-        <div class="card-meta">
-            <div class="card-title">${esc(info.title || 'Audio')}</div>
-            ${info.uploader ? `<div class="card-uploader">${esc(info.uploader)}</div>` : ''}
-            <div class="card-sub">${esc(pl.label)} &nbsp;·&nbsp; <span class="audio-badge has">🎵 MP3</span></div>
-        </div>
-    </div>
-    <div class="card-body">
-        <div class="info-box green"><span class="info-ico">🎵</span><span>Best available audio quality extracted.</span></div>
-        <button class="dl-btn" id="audio-dl">⬇ DOWNLOAD MP3</button>
-    </div>
-</div>`;
-    document.getElementById('audio-dl').onclick = () => triggerStream(dlUrl, filename);
 }
 
 // ── PICKER (Instagram multi) ──────────────────────────────────────────────────
@@ -603,7 +586,7 @@ function renderPicker(info, platform) {
     area.innerHTML = `
 <div class="card">
     <div class="card-head">
-        <div class="card-icon">◈</div>
+        <div class="card-thumb"><div class="card-thumb-placeholder">◈</div></div>
         <div class="card-meta">
             <div class="card-title">Instagram Post — ${items.length} item${items.length>1?'s':''}</div>
             <div class="card-sub"><span class="audio-badge has">🔊 Audio included</span></div>
@@ -661,11 +644,6 @@ function showAlert(type, msg) {
     document.getElementById('result-area').innerHTML = `
 <div class="alert ${type}"><div class="alert-ico">${icons[type]||'ℹ'}</div><div>${esc(msg)}</div></div>`;
 }
-function esc(s) {
-    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
-function getExt(u) { try{const m=new URL(u).pathname.match(/\.(\w{2,4})(\?|$)/);return m?m[1]:'jpg';}catch{return 'jpg';} }
 
 inp.addEventListener('keydown', e => { if(e.key==='Enter') doFetch(); });
 window.addEventListener('focus', async () => {

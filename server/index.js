@@ -1,12 +1,14 @@
 'use strict';
 
 /**
- * GRABR v4.0 — Hybrid Backend
+ * GRABR v5.0 — Fixed Backend
  *
- * Strategy:
- *  - yt-dlp  → get accurate video title, formats, real sizes (no fake qualities)
- *  - Cobalt  → actually fetch the streamable/downloadable URLs
- *  - FFmpeg  → merge separate video+audio streams for YouTube 720p+
+ * Fixes:
+ *  - Auto-installs yt-dlp on Render.com (and any Linux server)
+ *  - Returns thumbnail URLs
+ *  - Proper quality detection with real sizes
+ *  - No 0-byte downloads (fresh URL fetch on every download click)
+ *  - Audio-only auto-detected per format (no manual mode toggle)
  */
 
 const http    = require('http');
@@ -14,7 +16,7 @@ const https   = require('https');
 const path    = require('path');
 const fs      = require('fs');
 const os      = require('os');
-const { spawn, execSync } = require('child_process');
+const { spawn, execSync, spawnSync } = require('child_process');
 const crypto  = require('crypto');
 
 const PORT = process.env.PORT || 3000;
@@ -30,6 +32,53 @@ if (fs.existsSync(envFile)) {
 
 const COBALT_INSTANCE = (process.env.COBALT_INSTANCE || '').replace(/\/$/, '');
 
+// ── Auto-install yt-dlp ───────────────────────────────────────────────────────
+function autoInstallYtdlp() {
+    // Try pip first (works on Render)
+    const pipCmds = ['pip3', 'pip'];
+    for (const pip of pipCmds) {
+        try {
+            const r = spawnSync(pip, ['install', '--quiet', '--upgrade', 'yt-dlp'], {
+                timeout: 120000, stdio: 'pipe'
+            });
+            if (r.status === 0) {
+                console.log(`✓ yt-dlp installed via ${pip}`);
+                return true;
+            }
+        } catch (_) {}
+    }
+
+    // Try downloading binary directly (fallback)
+    const binPath = '/usr/local/bin/yt-dlp';
+    try {
+        const r = spawnSync('curl', [
+            '-L', '--silent', '--output', binPath,
+            'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp'
+        ], { timeout: 60000, stdio: 'pipe' });
+        if (r.status === 0) {
+            spawnSync('chmod', ['+x', binPath]);
+            console.log('✓ yt-dlp binary downloaded');
+            return true;
+        }
+    } catch (_) {}
+
+    // Try wget
+    try {
+        const binPathW = '/usr/local/bin/yt-dlp';
+        const r = spawnSync('wget', [
+            '-q', '-O', binPathW,
+            'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp'
+        ], { timeout: 60000, stdio: 'pipe' });
+        if (r.status === 0) {
+            spawnSync('chmod', ['+x', binPathW]);
+            console.log('✓ yt-dlp binary downloaded via wget');
+            return true;
+        }
+    } catch (_) {}
+
+    return false;
+}
+
 // ── Tool detection ────────────────────────────────────────────────────────────
 function findBin(name) {
     try {
@@ -38,17 +87,51 @@ function findBin(name) {
             : execSync(`which ${name} 2>/dev/null`).toString().trim();
         if (w) return w;
     } catch (_) {}
-    for (const c of [`/usr/bin/${name}`,`/usr/local/bin/${name}`,`/opt/homebrew/bin/${name}`,`${os.homedir()}/.local/bin/${name}`]) {
+    for (const c of [
+        `/usr/bin/${name}`, `/usr/local/bin/${name}`,
+        `/opt/homebrew/bin/${name}`, `${os.homedir()}/.local/bin/${name}`,
+        `${os.homedir()}/.local/share/pipx/venvs/yt-dlp/bin/${name}`,
+    ]) {
         try { fs.accessSync(c, fs.constants.X_OK); return c; } catch (_) {}
+    }
+    // Also check python -m yt_dlp style
+    if (name === 'yt-dlp') {
+        try {
+            const r = spawnSync('python3', ['-m', 'yt_dlp', '--version'], { timeout: 5000, stdio: 'pipe' });
+            if (r.status === 0) return 'python3 -m yt_dlp'; // special marker
+        } catch (_) {}
     }
     return null;
 }
 
-const FFMPEG_PATH = findBin('ffmpeg');
-const YTDLP_PATH  = findBin('yt-dlp');
+let FFMPEG_PATH = findBin('ffmpeg');
+let YTDLP_PATH  = findBin('yt-dlp');
 
-console.log(FFMPEG_PATH ? `✓ FFmpeg : ${FFMPEG_PATH}` : '✗ FFmpeg  not found');
-console.log(YTDLP_PATH  ? `✓ yt-dlp : ${YTDLP_PATH}`  : '✗ yt-dlp  not found');
+console.log(FFMPEG_PATH ? `✓ FFmpeg : ${FFMPEG_PATH}` : '✗ FFmpeg not found');
+console.log(YTDLP_PATH  ? `✓ yt-dlp : ${YTDLP_PATH}`  : '✗ yt-dlp not found — attempting auto-install…');
+
+if (!YTDLP_PATH) {
+    const ok = autoInstallYtdlp();
+    if (ok) {
+        YTDLP_PATH = findBin('yt-dlp');
+        if (!YTDLP_PATH) {
+            // Maybe installed as module
+            try {
+                const r = spawnSync('python3', ['-m', 'yt_dlp', '--version'], { timeout: 8000, stdio: 'pipe' });
+                if (r.status === 0) YTDLP_PATH = '__python_module__';
+            } catch (_) {}
+        }
+        console.log(YTDLP_PATH ? `✓ yt-dlp now available: ${YTDLP_PATH}` : '✗ yt-dlp still not found after install');
+    }
+}
+
+// Helper to spawn yt-dlp regardless of install method
+function spawnYtdlp(args, opts) {
+    if (YTDLP_PATH === '__python_module__') {
+        return spawn('python3', ['-m', 'yt_dlp', ...args], opts);
+    }
+    return spawn(YTDLP_PATH, args, opts);
+}
 
 // ── HTTP helpers ──────────────────────────────────────────────────────────────
 function makeRequest(method, targetUrl, jsonBody, extraHeaders = {}) {
@@ -67,13 +150,13 @@ function makeRequest(method, targetUrl, jsonBody, extraHeaders = {}) {
                 path: parsed.pathname + parsed.search,
                 method,
                 headers: {
-                    'User-Agent': 'grabr/4.0',
+                    'User-Agent': 'grabr/5.0',
                     'Accept': 'application/json',
                     ...extraHeaders,
                     ...(bodyBuf ? { 'Content-Type': 'application/json', 'Content-Length': bodyBuf.length } : {}),
                 },
                 rejectUnauthorized: false,
-                timeout: 25000,
+                timeout: 30000,
             };
             const req = mod.request(options, res => {
                 const loc = res.headers.location;
@@ -100,7 +183,7 @@ function postJSON(targetUrl, body) {
             res.on('data', c => { raw += c; });
             res.on('end', () => {
                 try { resolve({ httpStatus: res.statusCode, data: JSON.parse(raw) }); }
-                catch { reject(new Error(`Non-JSON (HTTP ${res.statusCode}): ${raw.slice(0,200)}`)); }
+                catch { reject(new Error(`Non-JSON (HTTP ${res.statusCode}): ${raw.slice(0,300)}`)); }
             });
             res.on('error', reject);
         } catch (e) { reject(e); }
@@ -109,7 +192,7 @@ function postJSON(targetUrl, body) {
 
 function getStream(targetUrl) {
     return makeRequest('GET', targetUrl, null, {
-        'User-Agent': 'Mozilla/5.0 (compatible; grabr/4.0)',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     });
 }
 
@@ -153,9 +236,12 @@ function ytdlpGetFormats(videoUrl) {
     return new Promise((resolve) => {
         if (!YTDLP_PATH) return resolve(null);
 
-        const proc = spawn(YTDLP_PATH, [
-            '--dump-json', '--no-playlist', '--no-warnings', '--skip-download', videoUrl,
-        ], { timeout: 35000 });
+        const proc = spawnYtdlp([
+            '--dump-json', '--no-playlist', '--no-warnings',
+            '--skip-download',
+            '--no-check-certificates',
+            videoUrl,
+        ], { timeout: 45000 });
 
         let stdout = '', stderr = '';
         proc.stdout.on('data', d => { stdout += d; });
@@ -163,37 +249,46 @@ function ytdlpGetFormats(videoUrl) {
 
         proc.on('close', (code) => {
             if (code !== 0 || !stdout.trim()) {
-                console.warn('[yt-dlp] failed:', stderr.slice(0,200));
+                console.warn('[yt-dlp] failed code=' + code, stderr.slice(0,300));
                 return resolve(null);
             }
             try {
                 const info = JSON.parse(stdout);
                 const title    = info.title    || 'video';
-                const uploader = info.uploader || info.channel || '';
+                const uploader = info.uploader || info.channel || info.uploader_id || '';
+                const duration = info.duration || 0;
 
-                // Group formats by height, pick best bitrate per height
+                // Thumbnail: prefer a mid-size one
+                let thumbnail = info.thumbnail || '';
+                if (Array.isArray(info.thumbnails) && info.thumbnails.length > 0) {
+                    // Sort by preference: prefer url containing 'maxresdefault' or 'hqdefault'
+                    const sorted = [...info.thumbnails].sort((a,b) => (b.preference||0)-(a.preference||0));
+                    thumbnail = sorted[0].url || thumbnail;
+                }
+
+                // Group video formats by height
                 const heightMap = new Map();
                 for (const f of (info.formats || [])) {
                     const h = f.height;
                     if (!h || h < 100 || !f.vcodec || f.vcodec === 'none') continue;
-                    const existing = heightMap.get(h);
                     const fsize = f.filesize || f.filesize_approx || 0;
-                    const esize = existing ? (existing.filesize || 0) : 0;
-                    if (!existing || fsize > esize) {
+                    const existing = heightMap.get(h);
+                    if (!existing || fsize > (existing.filesize || 0)) {
                         heightMap.set(h, {
                             height: h, filesize: fsize,
                             has_audio: !!(f.acodec && f.acodec !== 'none'),
                             ext: f.ext || 'mp4',
+                            tbr: f.tbr || 0,
                         });
                     }
                 }
 
-                // Best audio-only size (for merge size estimation)
+                // Best audio-only size (for merged formats)
                 const bestAudio = (info.formats || [])
                     .filter(f => f.acodec && f.acodec !== 'none' && (!f.vcodec || f.vcodec === 'none'))
                     .reduce((b, f) => {
                         const s = f.filesize || f.filesize_approx || 0;
-                        return (!b || s > (b.filesize || b.filesize_approx || 0)) ? f : b;
+                        return (!b || s > (b.filesize || 0)) ? f : b;
                     }, null);
                 const audioSize = bestAudio ? (bestAudio.filesize || bestAudio.filesize_approx || 0) : 0;
 
@@ -204,18 +299,17 @@ function ytdlpGetFormats(videoUrl) {
                         label: f.height + 'p',
                         needsMerge: !f.has_audio,
                         hasAudio: f.has_audio || !!FFMPEG_PATH,
-                        // total estimated size (video + audio if merge)
                         size: f.filesize + (!f.has_audio ? audioSize : 0),
                         ext: f.ext,
                     }));
 
-                resolve({ title, uploader, duration: info.duration || 0, qualities });
+                resolve({ title, uploader, duration, thumbnail, qualities });
             } catch (e) {
                 console.warn('[yt-dlp] parse error:', e.message);
                 resolve(null);
             }
         });
-        proc.on('error', e => { console.warn('[yt-dlp] spawn:', e.message); resolve(null); });
+        proc.on('error', e => { console.warn('[yt-dlp] spawn error:', e.message); resolve(null); });
     });
 }
 
@@ -241,7 +335,7 @@ function interpretCobaltError(code) {
     return `Download failed: ${code}`;
 }
 
-// ── /api/info — video title + REAL quality list ───────────────────────────────
+// ── /api/info ─────────────────────────────────────────────────────────────────
 async function handleInfo(req, res) {
     let mediaUrl;
     try { ({ url: mediaUrl } = JSON.parse(await readBody(req))); }
@@ -251,22 +345,27 @@ async function handleInfo(req, res) {
     console.log(`\n[INFO] ${mediaUrl}`);
     const isYouTube = /youtu\.?be/.test(mediaUrl);
 
-    // YouTube: use yt-dlp for accurate format list
+    // YouTube: use yt-dlp for accurate info + thumbnail
     if (isYouTube && YTDLP_PATH) {
         const meta = await ytdlpGetFormats(mediaUrl);
         if (meta && meta.qualities.length > 0) {
-            console.log(`  ✓ "${meta.title}" — ${meta.qualities.length} real qualities`);
+            console.log(`  ✓ "${meta.title}" — ${meta.qualities.length} qualities, thumb: ${meta.thumbnail ? 'yes' : 'no'}`);
             return sendJSON(res, 200, {
                 title: meta.title, uploader: meta.uploader,
-                duration: meta.duration, qualities: meta.qualities,
+                duration: meta.duration, thumbnail: meta.thumbnail,
+                qualities: meta.qualities,
                 ffmpeg: !!FFMPEG_PATH, source: 'ytdlp',
             });
         }
+        console.log('  ⚠ yt-dlp returned no formats, falling back to Cobalt');
     }
 
-    // Non-YouTube or fallback: ask Cobalt for "max" only
+    // Non-YouTube or fallback
     try {
-        const data = await cobaltFetch({ url: mediaUrl, downloadMode: 'auto', videoQuality: 'max', audioFormat: 'best' });
+        const data = await cobaltFetch({
+            url: mediaUrl, downloadMode: 'auto',
+            videoQuality: 'max', audioFormat: 'best',
+        });
 
         if ((data.status === 'picker' || data.picker) && Array.isArray(data.picker)) {
             return sendJSON(res, 200, {
@@ -278,6 +377,7 @@ async function handleInfo(req, res) {
             const needsMerge = !!(data.audio && data.url && data.audio !== data.url);
             return sendJSON(res, 200, {
                 title: data.filename || 'video', uploader: '',
+                thumbnail: '', duration: 0,
                 qualities: [{ quality: 'max', label: 'Best', needsMerge, hasAudio: !needsMerge || !!FFMPEG_PATH, size: 0, ext: 'mp4' }],
                 ffmpeg: !!FFMPEG_PATH, source: 'cobalt',
             });
@@ -289,7 +389,7 @@ async function handleInfo(req, res) {
     }
 }
 
-// ── /api/fetch — get Cobalt URLs for a specific quality ──────────────────────
+// ── /api/fetch ────────────────────────────────────────────────────────────────
 async function handleFetch(req, res) {
     let mediaUrl, quality, audioOnly;
     try {
@@ -314,16 +414,20 @@ async function handleFetch(req, res) {
     }
 }
 
-// ── /api/stream — proxy CDN URL → browser ────────────────────────────────────
+// ── /api/stream ───────────────────────────────────────────────────────────────
 async function handleStream(req, res) {
     const { searchParams } = new URL(req.url, 'http://localhost');
     const targetUrl = decodeURIComponent(searchParams.get('url') || '');
-    const filename  = decodeURIComponent(searchParams.get('filename') || 'media.mp4').replace(/[^a-zA-Z0-9._\- ]/g, '_');
+    const filename  = decodeURIComponent(searchParams.get('filename') || 'media.mp4')
+        .replace(/[^a-zA-Z0-9._\- ]/g, '_');
     if (!targetUrl) return sendJSON(res, 400, { error: 'Missing url' });
     console.log(`\n[STREAM] ${filename}`);
     try {
         const upstream = await getStream(targetUrl);
-        if (upstream.statusCode >= 400) { upstream.resume(); return sendJSON(res, 502, { error: `Upstream HTTP ${upstream.statusCode}` }); }
+        if (upstream.statusCode >= 400) {
+            upstream.resume();
+            return sendJSON(res, 502, { error: `Upstream HTTP ${upstream.statusCode} — URL may have expired. Click GRAB IT again.` });
+        }
         const headers = {
             'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store',
             'Content-Disposition': `attachment; filename="${filename}"`,
@@ -339,12 +443,12 @@ async function handleStream(req, res) {
     }
 }
 
-// ── /api/merge — FFmpeg merge of video+audio ─────────────────────────────────
+// ── /api/merge ────────────────────────────────────────────────────────────────
 function dlToFile(srcUrl, destPath) {
     return new Promise(async (resolve, reject) => {
         try {
             const res = await getStream(srcUrl);
-            if (res.statusCode >= 400) { res.resume(); return reject(new Error(`CDN HTTP ${res.statusCode}`)); }
+            if (res.statusCode >= 400) { res.resume(); return reject(new Error(`CDN HTTP ${res.statusCode} — URL expired. Click GRAB IT again.`)); }
             const out = fs.createWriteStream(destPath);
             res.pipe(out);
             out.on('finish', resolve);
@@ -388,18 +492,18 @@ async function handleMerge(req, res) {
         console.log('  ↓ video…');
         await dlToFile(videoUrl, vp);
         const vs = fs.statSync(vp).size;
-        if (vs === 0) throw new Error('Video stream is 0 bytes. The URL has expired — please click GRAB IT again to get fresh URLs, then retry the download.');
+        if (vs === 0) throw new Error('Video stream is 0 bytes. The CDN URL expired — click GRAB IT again, then download immediately.');
 
         console.log(`  ↓ audio… (video ${(vs/1e6).toFixed(1)} MB)`);
         await dlToFile(audioUrl, ap);
         const as_ = fs.statSync(ap).size;
-        if (as_ === 0) throw new Error('Audio stream is 0 bytes. The URL has expired — please click GRAB IT again, then retry.');
+        if (as_ === 0) throw new Error('Audio stream is 0 bytes. The CDN URL expired — click GRAB IT again.');
 
         console.log('  ⚙ merging with FFmpeg…');
         await runFFmpeg(vp, ap, op);
 
         const { size } = fs.statSync(op);
-        if (size === 0) { cleanup(); return sendJSON(res, 500, { error: 'FFmpeg produced empty file. Check server logs.' }); }
+        if (size === 0) { cleanup(); return sendJSON(res, 500, { error: 'FFmpeg produced empty file.' }); }
 
         console.log(`  ✓ ${(size/1e6).toFixed(1)} MB`);
         res.writeHead(200, {
@@ -429,7 +533,12 @@ function handleHealth(res) {
 // ── HTTP Server ───────────────────────────────────────────────────────────────
 const server = http.createServer(async (req, res) => {
     if (req.method === 'OPTIONS') {
-        res.writeHead(204, { 'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Access-Control-Allow-Headers':'Content-Type,Accept','Access-Control-Max-Age':'86400' });
+        res.writeHead(204, {
+            'Access-Control-Allow-Origin':'*',
+            'Access-Control-Allow-Methods':'GET,POST,OPTIONS',
+            'Access-Control-Allow-Headers':'Content-Type,Accept',
+            'Access-Control-Max-Age':'86400',
+        });
         return res.end();
     }
     let pathname;
@@ -448,10 +557,10 @@ const server = http.createServer(async (req, res) => {
 server.on('error', e => { console.error('Server error:', e.message); process.exit(1); });
 server.listen(PORT, () => {
     console.log(`\n╔══════════════════════════════════════════════════════╗
-║  GRABR v4.0                   http://localhost:${PORT}  ║
+║  GRABR v5.0                   http://localhost:${PORT}  ║
 ╠══════════════════════════════════════════════════════╣
 ║  FFmpeg : ${(FFMPEG_PATH  || '✗ not found').padEnd(42)}║
-║  yt-dlp : ${(YTDLP_PATH  || '✗ not found (install: pip install yt-dlp)').padEnd(42)}║
+║  yt-dlp : ${(YTDLP_PATH  || '✗ not found').padEnd(42)}║
 ║  Cobalt : ${(COBALT_INSTANCE || '✗ set COBALT_INSTANCE env var').padEnd(42)}║
 ╚══════════════════════════════════════════════════════╝\n`);
 });
