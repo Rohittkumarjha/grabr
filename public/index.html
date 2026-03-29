@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GRABR — Media Downloader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080809;--s1:#111114;--s2:#18181c;--s3:#222228;
+  --border:#2a2a32;--red:#ff3040;--orange:#ff8c00;
+  --text:#efefef;--muted:#5a5a6a;--muted2:#3a3a48;
+  --green:#00e676;--blue:#4fc3f7;--r:14px;--r-sm:9px;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.5}
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 40px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(8,8,9,.92);backdrop-filter:blur(24px);z-index:100}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:5px;background:linear-gradient(110deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo-sub{font-family:'DM Sans',sans-serif;font-size:.62rem;letter-spacing:2.5px;-webkit-text-fill-color:var(--muted);color:var(--muted);display:block;margin-top:-5px}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{padding:4px 11px;border-radius:100px;border:1px solid var(--border);font-size:.7rem;font-weight:500;letter-spacing:.4px;color:var(--muted)}
+.pill.yt{border-color:rgba(255,48,64,.35);color:#ff7070}
+.pill.ig{border-color:rgba(193,53,132,.35);color:#e879a0}
+.pill.tt{border-color:rgba(105,201,208,.35);color:#69c9d0}
+.hero{text-align:center;padding:70px 20px 44px;position:relative;overflow:hidden}
+.hero-glow{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:700px;height:360px;background:radial-gradient(ellipse,rgba(255,48,64,.11) 0%,transparent 68%);pointer-events:none}
+h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(3.2rem,9vw,7.5rem);line-height:.92;letter-spacing:1px}
+h1 em{font-style:normal;background:linear-gradient(130deg,var(--red) 0%,var(--orange) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{color:var(--muted);margin-top:18px;font-size:.95rem;font-weight:300;letter-spacing:.3px}
+.wrap{max-width:760px;margin:0 auto;padding:0 20px}
+.url-wrap{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color .2s,box-shadow .2s;display:flex;align-items:center}
+.url-wrap:focus-within{border-color:var(--red);box-shadow:0 0 0 3px rgba(255,48,64,.07)}
+.url-icon{padding:0 14px;color:var(--muted);font-size:1.05rem;flex-shrink:0}
+#url-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.93rem;padding:17px 0;caret-color:var(--red)}
+#url-input::placeholder{color:var(--muted)}
+.paste-btn{background:transparent;border:none;border-left:1px solid var(--border);color:var(--muted);padding:0 15px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.75rem;letter-spacing:.6px;transition:color .15s;flex-shrink:0;height:100%;min-height:54px}
+.paste-btn:hover{color:var(--text)}
+.platform-row{min-height:28px;display:flex;align-items:center;gap:8px;margin-top:7px;padding-left:4px}
+.det-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:100px;font-size:.74rem;font-weight:500;opacity:0;transform:translateY(-4px);transition:opacity .25s,transform .25s}
+.det-pill.show{opacity:1;transform:translateY(0)}
+.det-pill.youtube{background:rgba(255,48,64,.1);border:1px solid rgba(255,48,64,.3);color:#ff7070}
+.det-pill.instagram{background:rgba(193,53,132,.1);border:1px solid rgba(193,53,132,.3);color:#e879a0}
+.det-pill.tiktok{background:rgba(105,201,208,.1);border:1px solid rgba(105,201,208,.3);color:#69c9d0}
+.det-pill.twitter{background:rgba(100,116,139,.1);border:1px solid rgba(100,116,139,.3);color:#94a3b8}
+#mode-row{display:flex;gap:6px;margin-top:10px;opacity:0;transition:opacity .3s;pointer-events:none}
+#mode-row.show{opacity:1;pointer-events:auto}
+.mode-btn{flex:1;padding:8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--s2);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.78rem;cursor:pointer;transition:all .15s}
+.mode-btn.active{border-color:var(--red);background:rgba(255,48,64,.08);color:var(--red)}
+#fetch-btn{width:100%;margin-top:10px;padding:15px;background:linear-gradient(130deg,var(--red),var(--orange));color:#fff;border:none;border-radius:var(--r);font-family:'Bebas Neue',sans-serif;font-size:1.25rem;letter-spacing:3.5px;cursor:pointer;transition:opacity .2s,transform .1s;display:flex;align-items:center;justify-content:center;gap:9px;position:relative;overflow:hidden}
+#fetch-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.08),transparent)}
+#fetch-btn:hover{opacity:.9}
+#fetch-btn:active{transform:scale(.99)}
+#fetch-btn:disabled{opacity:.45;cursor:not-allowed}
+.srv-bar{text-align:center;padding:9px;color:var(--muted);font-size:.72rem;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--muted2)}
+.dot.ok{background:var(--green)}
+.dot.err{background:var(--red)}
+.dot.warn{background:var(--orange)}
+#result-area{max-width:760px;margin:28px auto 70px;padding:0 20px}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;animation:up .35s cubic-bezier(.16,1,.3,1)}
+.card-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.card-icon{width:52px;height:52px;border-radius:10px;background:var(--s2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.5rem}
+.card-meta{flex:1;min-width:0}
+.card-title{font-weight:600;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-sub{color:var(--muted);font-size:.78rem;margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.audio-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:100px;font-size:.65rem;font-weight:600;letter-spacing:.3px}
+.audio-badge.has{background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);color:var(--green)}
+.audio-badge.none{background:rgba(255,48,64,.1);border:1px solid rgba(255,48,64,.25);color:var(--red)}
+.audio-badge.merge{background:rgba(255,140,0,.1);border:1px solid rgba(255,140,0,.25);color:var(--orange)}
+.card-body{padding:22px}
+.sec-label{font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:9px;font-weight:500}
+.q-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px}
+.q-btn{padding:7px 16px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--s2);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.83rem;font-weight:500;cursor:pointer;transition:all .13s;position:relative}
+.q-btn:hover{border-color:var(--red);color:var(--red)}
+.q-btn.sel{border-color:var(--red);background:rgba(255,48,64,.09);color:var(--red)}
+.q-btn .q-note{display:block;font-size:.6rem;color:var(--muted);margin-top:1px;font-weight:400}
+.q-btn.sel .q-note{color:rgba(255,48,64,.6)}
+/* info box */
+.info-box{padding:11px 14px;border-radius:var(--r-sm);font-size:.82rem;display:flex;gap:9px;margin-bottom:16px;align-items:flex-start;line-height:1.45}
+.info-box.green{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.18);color:rgba(0,230,118,.9)}
+.info-box.orange{background:rgba(255,140,0,.06);border:1px solid rgba(255,140,0,.18);color:rgba(255,140,0,.9)}
+.info-box.red{background:rgba(255,48,64,.06);border:1px solid rgba(255,48,64,.18);color:rgba(255,80,80,.9)}
+.info-ico{flex-shrink:0;margin-top:1px}
+/* download button */
+.dl-btn{width:100%;padding:14px;background:linear-gradient(130deg,var(--red),var(--orange));color:#fff;border:none;border-radius:var(--r-sm);font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:3px;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.dl-btn:hover{opacity:.88}
+.dl-btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.dl-btn.secondary{background:var(--s3);color:var(--text);border:1px solid var(--border);font-size:.85rem;letter-spacing:1px;font-family:'DM Sans',sans-serif;font-weight:600;margin-top:8px}
+.dl-btn.secondary:hover{border-color:var(--red);color:var(--red)}
+/* progress */
+.prog{margin-top:12px;display:none}
+.prog.show{display:block}
+.prog-bar{height:3px;background:var(--s3);border-radius:100px;overflow:hidden}
+.prog-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--red),var(--orange));width:0%;transition:width .3s}
+.prog-txt{font-size:.75rem;color:var(--muted);margin-top:6px}
+/* multi image */
+.img-controls{display:flex;gap:7px;align-items:center;margin-bottom:11px}
+.ctrl-btn{padding:5px 13px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--s2);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.77rem;cursor:pointer;transition:all .13s}
+.ctrl-btn:hover{color:var(--text);border-color:#444}
+.sel-count{margin-left:auto;font-size:.78rem;color:var(--muted)}
+.img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:18px}
+.img-item{border-radius:9px;overflow:hidden;border:2px solid var(--border);cursor:pointer;position:relative;transition:border-color .15s;aspect-ratio:1;background:var(--s2)}
+.img-item img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s}
+.img-item:hover img{transform:scale(1.03)}
+.img-item.sel{border-color:var(--red)}
+.img-check{position:absolute;top:7px;right:7px;width:21px;height:21px;border-radius:50%;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#fff;transition:all .15s}
+.img-item.sel .img-check{background:var(--red);border-color:var(--red)}
+.img-num{position:absolute;bottom:5px;left:7px;font-size:.67rem;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:4px;color:#fff}
+.img-type{position:absolute;top:7px;left:7px;font-size:.65rem;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:4px;color:#fff}
+/* spinner */
+.spin{display:inline-block;width:17px;height:17px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:rot .65s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+/* alerts */
+.alert{padding:14px 17px;border-radius:var(--r);font-size:.87rem;display:flex;align-items:flex-start;gap:10px;animation:up .25s ease}
+.alert.err{background:rgba(255,48,64,.07);border:1px solid rgba(255,48,64,.22);color:#ff8888}
+.alert.warn{background:rgba(255,140,0,.07);border:1px solid rgba(255,140,0,.22);color:#ffaa44}
+.alert.ok{background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.22);color:var(--green)}
+.alert-ico{font-size:.95rem;flex-shrink:0;margin-top:1px}
+/* steps */
+.steps{max-width:760px;margin:0 auto 70px;padding:0 20px}
+.steps-inner{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:22px 26px}
+.steps-inner h3{font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:14px}
+.step{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+.step:last-child{margin-bottom:0}
+.step-n{width:22px;height:22px;border-radius:50%;background:rgba(255,48,64,.12);border:1px solid rgba(255,48,64,.3);color:var(--red);font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step p{color:var(--muted);font-size:.84rem;line-height:1.5}
+.step p strong{color:var(--text)}
+@media(max-width:580px){
+  header{padding:14px 18px}.pills{display:none}.hero{padding:44px 20px 30px}
+  .img-grid{grid-template-columns:repeat(2,1fr)}#mode-row{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">GRABR</div>
+    <span class="logo-sub">MEDIA DOWNLOADER</span>
+  </div>
+  <div class="pills">
+    <div class="pill yt">▶ YouTube</div>
+    <div class="pill ig">◈ Instagram</div>
+    <div class="pill tt">♪ TikTok</div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-glow"></div>
+  <h1>GRAB ANY<br/><em>MEDIA.</em></h1>
+  <p class="hero-sub">Paste a link — pick quality — download with audio. No signup, no tracking.</p>
+</section>
+
+<div class="wrap" style="margin-bottom:18px">
+  <div class="url-wrap">
+    <div class="url-icon">🔗</div>
+    <input type="text" id="url-input" placeholder="Paste YouTube, Instagram, or TikTok URL…" autocomplete="off" spellcheck="false"/>
+    <button class="paste-btn" onclick="doPaste()">PASTE</button>
+  </div>
+  <div class="platform-row">
+    <div id="det-pill" class="det-pill"></div>
+  </div>
+  <div id="mode-row">
+    <button class="mode-btn active" id="mode-video" onclick="setMode('video')">🎬 Video + Audio</button>
+    <button class="mode-btn" id="mode-audio" onclick="setMode('audio')">🎵 Audio Only (MP3)</button>
+  </div>
+  <button id="fetch-btn" onclick="doFetch()">⬇ GRAB IT</button>
+  <div class="srv-bar">
+    <span class="dot" id="srv-dot"></span>
+    <span id="srv-txt">Checking backend…</span>
+  </div>
+</div>
+
+<section id="result-area"></section>
+
+<section class="steps">
+  <div class="steps-inner">
+    <h3>Audio &amp; Quality Guide</h3>
+    <div class="step"><div class="step-n">🎬</div><p><strong>Instagram / TikTok</strong> — always have audio built in. Download directly, full quality.</p></div>
+    <div class="step"><div class="step-n">📺</div><p><strong>YouTube 360p / 480p</strong> — audio already embedded in the file. No merging needed.</p></div>
+    <div class="step"><div class="step-n">🏆</div><p><strong>YouTube 720p and above</strong> — YouTube serves video and audio as separate streams. The server automatically merges them using FFmpeg so you get <strong>full audio + video</strong> in one file.</p></div>
+    <div class="step"><div class="step-n">🎵</div><p>Switch to <strong>Audio Only</strong> mode to download just the MP3 from any video.</p></div>
+  </div>
+</section>
+
+<script>
+// ── CONFIG ─────────────────────────────────────────────────────────────────
+const BACKEND = (function(){
+  const h = window.location.hostname;
+  if (h === 'localhost' || h === '127.0.0.1') return window.location.origin;
+  // Update this if deploying online:
+  // return 'https://your-grabr-server.com';
+  return '';
+})();
+
+const COBALT_DIRECT = [
+  'https://cobalt.api.buldav.com',
+  'https://cobalt.api.timelessnesses.me',
+  'https://capi.oak.li',
+];
+
+let currentMode = 'video';
+let selectedQuality = 'max';
+let selectedImages = new Set();
+let serverHasFFmpeg = false;
+
+// ── SERVER CHECK ──────────────────────────────────────────────────────────
+async function checkServer(){
+  const dot = document.getElementById('srv-dot');
+  const txt = document.getElementById('srv-txt');
+  if (!BACKEND) {
+    dot.className = 'dot warn';
+    txt.innerHTML = 'No backend detected — open via <strong>node server/index.js</strong> for best results';
+    return;
+  }
+  try {
+    const r = await fetch(BACKEND + '/api/health', { signal: AbortSignal.timeout(4000) });
+    const d = await r.json();
+    serverHasFFmpeg = d.ffmpeg;
+    dot.className = 'dot ok';
+    txt.innerHTML = `Backend connected &nbsp;·&nbsp; FFmpeg: ${d.ffmpeg
+      ? '<span style="color:var(--green)">✓ YouTube audio merging enabled</span>'
+      : '<span style="color:var(--orange)">✗ install FFmpeg for YouTube 720p+ audio</span>'}`;
+  } catch {
+    dot.className = 'dot err';
+    txt.textContent = 'Backend offline — using direct mode (CORS may block some requests)';
+  }
+}
+
+// ── PLATFORM ──────────────────────────────────────────────────────────────
+function detectPlatform(u){
+  if(!u) return null;
+  const l = u.toLowerCase();
+  if(l.includes('youtu.be')||l.includes('youtube.com')) return 'youtube';
+  if(l.includes('instagram.com')) return 'instagram';
+  if(l.includes('tiktok.com')) return 'tiktok';
+  if(l.includes('twitter.com')||l.includes('x.com')) return 'twitter';
+  return null;
+}
+
+const PL = {
+  youtube:  { label:'▶ YouTube / Shorts', cls:'youtube',  icon:'▶', q:['max','2160','1440','1080','720','480','360'] },
+  instagram:{ label:'◈ Instagram',        cls:'instagram', icon:'◈', q:['max'] },
+  tiktok:   { label:'♪ TikTok',           cls:'tiktok',   icon:'♪', q:['max'] },
+  twitter:  { label:'𝕏 Twitter / X',      cls:'twitter',  icon:'𝕏', q:['max','1080','720','480'] },
+};
+
+// Audio-merged status by quality (YouTube)
+function audioStatus(platform, quality){
+  if (platform !== 'youtube') return { has: true, label: '🔊 Audio included' };
+  const q = parseInt(quality) || 9999;
+  if (quality === 'max') return serverHasFFmpeg
+    ? { merge: true, label: '🔀 Server will merge audio' }
+    : { warn: true,  label: '⚠ 720p+ may lack audio without FFmpeg' };
+  if (q <= 480)  return { has: true,   label: '🔊 Audio included' };
+  return serverHasFFmpeg
+    ? { merge: true, label: '🔀 Server will merge audio' }
+    : { warn: true,  label: '⚠ Separate streams — install FFmpeg on server' };
+}
+
+const inp = document.getElementById('url-input');
+const pill = document.getElementById('det-pill');
+const modeRow = document.getElementById('mode-row');
+
+inp.addEventListener('input', ()=>{
+  const p = detectPlatform(inp.value.trim());
+  if(p){ pill.textContent=PL[p].label; pill.className=`det-pill show ${PL[p].cls}`; modeRow.className='show'; }
+  else { pill.className='det-pill'; modeRow.className=''; }
+});
+
+function setMode(m){
+  currentMode = m;
+  document.getElementById('mode-video').className = 'mode-btn'+(m==='video'?' active':'');
+  document.getElementById('mode-audio').className = 'mode-btn'+(m==='audio'?' active':'');
+}
+
+async function doPaste(){
+  try { const t=await navigator.clipboard.readText(); inp.value=t; inp.dispatchEvent(new Event('input')); }
+  catch { inp.focus(); }
+}
+
+// ── FETCH ─────────────────────────────────────────────────────────────────
+async function doFetch(){
+  const rawUrl = inp.value.trim();
+  if(!rawUrl) return showAlert('err','Please paste a link first.');
+  const platform = detectPlatform(rawUrl);
+  if(!platform) return showAlert('err','Unsupported link. Try YouTube, Instagram, or TikTok.');
+
+  const btn = document.getElementById('fetch-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> GRABBING…';
+  document.getElementById('result-area').innerHTML = '';
+  selectedQuality = 'max';
+
+  try {
+    const data = await callCobalt(rawUrl, 'max', currentMode==='audio');
+    renderResult(data, platform, rawUrl);
+  } catch(e) {
+    showAlert('err', e.message||'Could not fetch. Make sure the link is public and try again.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '⬇ GRAB IT';
+  }
+}
+
+async function callCobalt(mediaUrl, quality='max', audioOnly=false){
+  const payload = {
+    url: mediaUrl,
+    quality,
+    audioOnly,
+    vQuality: quality,
+    videoQuality: quality,
+    downloadMode: audioOnly ? 'audio' : 'auto',
+    audioFormat: audioOnly ? 'mp3' : 'best',
+    isAudioOnly: audioOnly,
+    isNoTTWatermark: true,
+  };
+
+  if (BACKEND) {
+    try {
+      const r = await fetch(BACKEND+'/api/fetch', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(25000),
+      });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      return d;
+    } catch(e) {
+      if (e.name === 'AbortError') throw new Error('Request timed out. Try again.');
+      console.warn('Backend failed:', e.message);
+      if (!COBALT_DIRECT.length) throw e;
+    }
+  }
+
+  // Direct fallback
+  const errors = [];
+  for (const inst of COBALT_DIRECT) {
+    try {
+      const r = await fetch(inst+'/', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(14000),
+      });
+      if (!r.ok) throw new Error('HTTP '+r.status);
+      const d = await r.json();
+      if (d.status==='error') throw new Error(d.error?.code||d.text||'cobalt error');
+      return {...d, _instance:inst};
+    } catch(e) { errors.push(e.message); }
+  }
+  throw new Error('Could not fetch from any source. Run the Node.js backend for best results.\nDetails: '+errors[0]);
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function renderResult(data, platform, origUrl){
+  if ((data.status==='picker'||data.picker) && data.picker?.length) {
+    return renderPicker(data, platform);
+  }
+  if (data.url || data.status==='redirect'||data.status==='tunnel'||data.status==='stream') {
+    return renderSingle(data, platform, origUrl);
+  }
+  if (data.status==='error'||data.error) {
+    return showAlert('err', interpretErr(data.error?.code||data.text||data.error||'Unknown', platform));
+  }
+  showAlert('warn','Unexpected response. Please try again.');
+}
+
+function interpretErr(code, platform){
+  const c = String(code).toLowerCase();
+  if(c.includes('private')||c.includes('login')||c.includes('auth')) return 'This content is private or requires login. Only public content can be downloaded.';
+  if(c.includes('age')||c.includes('restricted')) return 'Age-restricted content requires authentication.';
+  if(c.includes('rate')||c.includes('limit')) return 'Rate limited. Please wait a minute and try again.';
+  if(c.includes('unavailable')) return 'This video is unavailable (deleted or region-locked).';
+  return `Could not fetch: ${code}`;
+}
+
+// ── SINGLE VIDEO ──────────────────────────────────────────────────────────
+function renderSingle(data, platform, origUrl){
+  const area = document.getElementById('result-area');
+  const pl = PL[platform] || PL.youtube;
+  const dlUrl = data.url || data.stream || '';
+  const filename = data.filename || `${platform}_video.mp4`;
+  const qualities = pl.q;
+  selectedQuality = qualities[0];
+
+  const ast = audioStatus(platform, selectedQuality);
+  const audioBadge = ast.has
+    ? `<span class="audio-badge has">🔊 Audio included</span>`
+    : ast.merge
+    ? `<span class="audio-badge merge">🔀 Server merges audio</span>`
+    : `<span class="audio-badge none">⚠ Audio may be missing</span>`;
+
+  const audioInfo = ast.has
+    ? `<div class="info-box green"><span class="info-ico">✓</span><span>This file already contains audio — no processing needed. Download and play directly.</span></div>`
+    : ast.merge
+    ? `<div class="info-box orange"><span class="info-ico">🔀</span><span>YouTube serves video and audio separately for high quality. The server will download both streams and merge them with FFmpeg — your final file will have full audio.</span></div>`
+    : `<div class="info-box red"><span class="info-ico">⚠</span><span>FFmpeg is not installed on the server. For 720p+ YouTube videos, audio may be missing. Install FFmpeg or choose 480p/360p which have audio built in.</span></div>`;
+
+  area.innerHTML = `
+  <div class="card">
+    <div class="card-head">
+      <div class="card-icon">${pl.icon}</div>
+      <div class="card-meta">
+        <div class="card-title">${esc(filename)}</div>
+        <div class="card-sub">${pl.label} &nbsp;·&nbsp; ${audioBadge}</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div id="audio-info">${audioInfo}</div>
+      <div class="sec-label">Select Quality</div>
+      <div class="q-grid" id="q-grid"></div>
+      <div class="prog" id="prog">
+        <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+        <div class="prog-txt" id="prog-txt">Preparing…</div>
+      </div>
+      <button class="dl-btn" id="main-dl" onclick="startDownload('${esc(dlUrl)}','${esc(filename)}','${platform}')">
+        ⬇ DOWNLOAD
+      </button>
+    </div>
+  </div>`;
+
+  buildQGrid(qualities, dlUrl, origUrl, platform, filename);
+}
+
+function buildQGrid(qualities, currentDlUrl, origUrl, platform, filename){
+  const grid = document.getElementById('q-grid');
+  if (!grid) return;
+  qualities.forEach((q, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'q-btn' + (i===0?' sel':'');
+    const ast2 = audioStatus(platform, q);
+    const note = ast2.has ? '🔊 audio' : ast2.merge ? '🔀 merged' : '⚠ check audio';
+    btn.innerHTML = `${q==='max'?'🏆 Best':q+'p'}<span class="q-note">${note}</span>`;
+    btn.onclick = async () => {
+      document.querySelectorAll('.q-btn').forEach(b=>b.classList.remove('sel'));
+      btn.classList.add('sel');
+      selectedQuality = q;
+
+      // Update audio info box
+      const ast3 = audioStatus(platform, q);
+      const aInfo = document.getElementById('audio-info');
+      if (aInfo) {
+        if (ast3.has) aInfo.innerHTML = `<div class="info-box green"><span class="info-ico">✓</span><span>This quality has audio built in — download and play directly.</span></div>`;
+        else if (ast3.merge) aInfo.innerHTML = `<div class="info-box orange"><span class="info-ico">🔀</span><span>YouTube 720p+ streams video and audio separately. The server will merge them with FFmpeg into one file with full audio.</span></div>`;
+        else aInfo.innerHTML = `<div class="info-box red"><span class="info-ico">⚠</span><span>FFmpeg not detected on server. This quality may download without audio. Choose 480p or below, or install FFmpeg.</span></div>`;
+      }
+
+      // Re-fetch this quality
+      const dl = document.getElementById('main-dl');
+      if (dl) { dl.disabled = true; dl.textContent = '⏳ Fetching quality…'; }
+      try {
+        const d = await callCobalt(origUrl, q, currentMode==='audio');
+        const newUrl = d.url||d.stream||currentDlUrl;
+        if (dl) {
+          dl.disabled = false;
+          dl.onclick = () => startDownload(newUrl, filename, platform);
+          dl.textContent = '⬇ DOWNLOAD ' + (q==='max'?'BEST':q+'P');
+        }
+      } catch {
+        if (dl) { dl.disabled = false; dl.textContent = '⬇ DOWNLOAD'; }
+      }
+    };
+    grid.appendChild(btn);
+  });
+}
+
+async function startDownload(dlUrl, filename, platform){
+  if (!dlUrl) return;
+
+  // For YouTube 720p+ with backend FFmpeg — show merging progress
+  const ast = audioStatus(platform, selectedQuality);
+  if (ast.merge && BACKEND) {
+    setProgress(true, 'Starting merge…', 10);
+    try {
+      // Get separate streams from cobalt then merge
+      // Actually cobalt tunnel already handles it — just proxy through our server
+      const proxied = `${BACKEND}/api/stream?url=${encodeURIComponent(dlUrl)}&filename=${encodeURIComponent(filename)}`;
+      setProgress(true, 'Downloading merged file…', 50);
+      triggerDownload(proxied, filename);
+      setTimeout(()=>setProgress(true,'Done ✓',100),1500);
+      setTimeout(()=>setProgress(false),3000);
+      return;
+    } catch(e) {
+      setProgress(false);
+    }
+  }
+
+  // Standard: proxy via backend to force download with filename, or direct
+  const finalUrl = BACKEND
+    ? `${BACKEND}/api/stream?url=${encodeURIComponent(dlUrl)}&filename=${encodeURIComponent(filename)}`
+    : dlUrl;
+
+  triggerDownload(finalUrl, filename);
+}
+
+function triggerDownload(href, filename){
+  const a = document.createElement('a');
+  a.href = href;
+  a.download = filename;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function setProgress(show, txt='', pct=0){
+  const prog = document.getElementById('prog');
+  const fill = document.getElementById('prog-fill');
+  const ptxt = document.getElementById('prog-txt');
+  if (!prog) return;
+  prog.className = show ? 'prog show' : 'prog';
+  if (fill) fill.style.width = pct + '%';
+  if (ptxt) ptxt.textContent = txt;
+}
+
+// ── PICKER ────────────────────────────────────────────────────────────────
+function renderPicker(data, platform){
+  const area = document.getElementById('result-area');
+  const items = data.picker;
+  selectedImages = new Set(items.map((_,i)=>i));
+
+  const gridHTML = items.map((item,i) => {
+    const isVideo = item.type==='video';
+    const thumb = item.thumb||item.url;
+    return `
+    <div class="img-item sel" data-idx="${i}" onclick="toggleImg(${i})">
+      <img src="${esc(thumb)}" alt="Item ${i+1}"
+        onerror="this.style.display='none'"/>
+      <div class="img-check">✓</div>
+      <div class="img-num">${i+1}</div>
+      ${isVideo?'<div class="img-type">🎬 Video</div>':''}
+    </div>`;
+  }).join('');
+
+  area.innerHTML = `
+  <div class="card">
+    <div class="card-head">
+      <div class="card-icon">◈</div>
+      <div class="card-meta">
+        <div class="card-title">Instagram Post — ${items.length} item${items.length>1?'s':''}</div>
+        <div class="card-sub"><span class="audio-badge has">🔊 Audio included</span></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="info-box green"><span class="info-ico">✓</span><span>Instagram posts always have audio embedded in video items. Images download at original quality.</span></div>
+      <div class="img-controls">
+        <button class="ctrl-btn" onclick="selectAllImgs(true)">Select All</button>
+        <button class="ctrl-btn" onclick="selectAllImgs(false)">Deselect All</button>
+        <span class="sel-count" id="sel-count">${items.length} selected</span>
+      </div>
+      <div class="img-grid">${gridHTML}</div>
+      <div class="prog" id="prog">
+        <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+        <div class="prog-txt" id="prog-txt">Downloading…</div>
+      </div>
+      <button class="dl-btn" id="dl-all-btn" onclick="downloadSelected(${JSON.stringify(items).replace(/"/g,'&quot;')})">
+        ⬇ DOWNLOAD SELECTED (${items.length})
+      </button>
+    </div>
+  </div>`;
+}
+
+function toggleImg(idx){
+  const el = document.querySelector(`.img-item[data-idx="${idx}"]`);
+  if(selectedImages.has(idx)){ selectedImages.delete(idx); el.classList.remove('sel'); el.querySelector('.img-check').textContent=''; }
+  else { selectedImages.add(idx); el.classList.add('sel'); el.querySelector('.img-check').textContent='✓'; }
+  const cnt = selectedImages.size;
+  document.getElementById('sel-count').textContent = cnt+' selected';
+  const b = document.getElementById('dl-all-btn');
+  if(b) b.textContent = `⬇ DOWNLOAD SELECTED (${cnt})`;
+}
+
+function selectAllImgs(val){
+  document.querySelectorAll('.img-item').forEach(el=>{
+    const idx = parseInt(el.dataset.idx);
+    if(val){ selectedImages.add(idx); el.classList.add('sel'); el.querySelector('.img-check').textContent='✓'; }
+    else { selectedImages.delete(idx); el.classList.remove('sel'); el.querySelector('.img-check').textContent=''; }
+  });
+  const cnt = selectedImages.size;
+  document.getElementById('sel-count').textContent = cnt+' selected';
+  const b = document.getElementById('dl-all-btn');
+  if(b) b.textContent = `⬇ DOWNLOAD SELECTED (${cnt})`;
+}
+
+async function downloadSelected(items){
+  if(selectedImages.size===0) return showAlert('warn','No items selected.');
+  const toDownload = [...selectedImages].sort().map(i=>items[i]);
+  const prog = document.getElementById('prog');
+  const fill = document.getElementById('prog-fill');
+  const txt  = document.getElementById('prog-txt');
+  if(prog) prog.className='prog show';
+
+  for(let i=0;i<toDownload.length;i++){
+    const item = toDownload[i];
+    const ext = item.type==='video' ? 'mp4' : getExt(item.url);
+    const fname = `instagram_${i+1}.${ext}`;
+    if(txt) txt.textContent=`Downloading ${i+1} / ${toDownload.length}…`;
+    if(fill) fill.style.width=`${((i+1)/toDownload.length)*100}%`;
+
+    const dlUrl = BACKEND
+      ? `${BACKEND}/api/stream?url=${encodeURIComponent(item.url)}&filename=${encodeURIComponent(fname)}`
+      : item.url;
+    triggerDownload(dlUrl, fname);
+
+    if(i < toDownload.length-1) await sleep(700);
+  }
+  if(txt) txt.textContent = `Done! ${toDownload.length} file${toDownload.length>1?'s':''} downloaded.`;
+  if(fill) fill.style.width='100%';
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function showAlert(type,msg){
+  const icons={err:'⚠',warn:'ℹ',ok:'✓'};
+  document.getElementById('result-area').innerHTML=`
+  <div class="alert ${type}">
+    <div class="alert-ico">${icons[type]||'ℹ'}</div>
+    <div>${esc(msg)}</div>
+  </div>`;
+}
+function esc(s){ if(!s)return''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)) }
+function getExt(u){ try{ const m=new URL(u).pathname.match(/\.(\w+)(\?|$)/); return m?m[1]:'jpg'; } catch{ return 'jpg'; } }
+
+inp.addEventListener('keydown', e=>{ if(e.key==='Enter') doFetch(); });
+
+// Auto-paste if clipboard has a supported URL
+window.addEventListener('focus', async ()=>{
+  if(!inp.value){
+    try { const t=await navigator.clipboard.readText(); if(detectPlatform(t)){inp.value=t;inp.dispatchEvent(new Event('input'));} } catch{}
+  }
+});
+
+checkServer();
+</script>
+</body>
+</html>
