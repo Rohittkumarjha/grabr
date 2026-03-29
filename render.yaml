@@ -9,4 +9,4 @@ services:
       - key: COBALT_INSTANCE
         sync: false
       - key: PORT
-        value: 3000
+        value: 10000
