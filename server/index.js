@@ -100,7 +100,7 @@ function makeRequest(method, targetUrl, jsonBody, extraHeaders = {}) {
         method,
         headers: {
           'User-Agent': 'grabr/3.0',
-          'Accept': 'application/json, */*',
+          'Accept': 'application/json',
           ...extraHeaders,
           ...(bodyBuf ? {
             'Content-Type': 'application/json',
